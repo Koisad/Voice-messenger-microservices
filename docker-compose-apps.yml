@@ -1,3 +1,5 @@
+version: '3.8'
+
 services:
   gateway-service:
     container_name: gateway-service
@@ -14,6 +16,7 @@ services:
       - SIGNALING_URI=ws://signaling-service:8083
       - AI_URI=http://ai-service:8084
       - ANALYTICS_URI=http://analytics-service:8085
+      - KEYCLOAK_CLIENT_SECRET=${KEYCLOAK_CLIENT_SECRET}
     networks:
       - app-net
 
@@ -23,16 +26,16 @@ services:
     command: start-dev
     environment:
       - KC_DB=postgres
-      - KC_DB_URL_HOST=3.71.11.3
-      - KC_DB_URL_PORT=8542
-      - KC_DB_URL_DATABASE=auth_db
-      - KC_DB_USERNAME=postgres
-      - KC_DB_PASSWORD=postgres
+      - KC_DB_URL_HOST=${INFRA_HOST}
+      - KC_DB_URL_PORT=${POSTGRES_PORT}
+      - KC_DB_URL_DATABASE=${POSTGRES_DB}
+      - KC_DB_USERNAME=${POSTGRES_USER}
+      - KC_DB_PASSWORD=${POSTGRES_PASSWORD}
       - KC_HOSTNAME_STRICT=false
       - KC_HTTP_ENABLED=true
       - KC_HTTP_PORT=9090
-      - KEYCLOAK_ADMIN=admin
-      - KEYCLOAK_ADMIN_PASSWORD=admin
+      - KEYCLOAK_ADMIN=${KEYCLOAK_ADMIN}
+      - KEYCLOAK_ADMIN_PASSWORD=${KEYCLOAK_ADMIN_PASSWORD}
     ports:
       - "9090:9090"
     networks:
@@ -46,10 +49,10 @@ services:
       args:
         SERVICE_PATH: services/chat-service
     environment:
-      - DB_HOST=3.71.11.3
-      - MONGO_PORT=8543
-      - MONGO_USER=admin
-      - MONGO_PASS=password
+      - DB_HOST=${INFRA_HOST}
+      - MONGO_PORT=${MONGO_PORT_CHAT}
+      - MONGO_USER=${MONGO_ROOT_USER}
+      - MONGO_PASS=${MONGO_ROOT_PASSWORD}
     networks:
       - app-net
 
@@ -71,10 +74,10 @@ services:
       args:
         SERVICE_PATH: services/ai-service
     environment:
-      - DB_HOST=3.71.11.3
-      - MONGO_PORT=8543
-      - MONGO_USER=admin
-      - MONGO_PASS=password
+      - DB_HOST=${INFRA_HOST}
+      - MONGO_PORT=${MONGO_PORT_CHAT}
+      - MONGO_USER=${MONGO_ROOT_USER}
+      - MONGO_PASS=${MONGO_ROOT_PASSWORD}
     networks:
       - app-net
 
@@ -86,10 +89,25 @@ services:
       args:
         SERVICE_PATH: services/analytics-service
     environment:
-      - DB_HOST=3.71.11.3
-      - MONGO_PORT=8544
-      - MONGO_USER=admin
-      - MONGO_PASS=password
+      - DB_HOST=${INFRA_HOST}
+      - MONGO_PORT=${MONGO_PORT_ANALYTICS}
+      - MONGO_USER=${MONGO_ROOT_USER}
+      - MONGO_PASS=${MONGO_ROOT_PASSWORD}
+    networks:
+      - app-net
+
+  livekit:
+    image: livekit/livekit-server:latest
+    container_name: voice-livekit-1
+    command: --config /livekit.yaml
+    ports:
+      - "7880:7880"
+      - "50000-50010:50000-50010/udp"
+    volumes:
+      - ./livekit.yaml:/livekit.yaml
+    environment:
+      - LIVEKIT_KEYS=${LIVEKIT_API_KEY}:${LIVEKIT_API_SECRET}
+      - LIVEKIT_REDIS_ADDRESS=redis://:${REDIS_PASSWORD}@${INFRA_HOST}:${REDIS_PORT}
     networks:
       - app-net
 

@@ -64,6 +64,8 @@ services:
       - MONGO_PORT=${MONGO_PORT_CHAT}
       - MONGO_USER=${MONGO_ROOT_USER}
       - MONGO_PASS=${MONGO_ROOT_PASSWORD}
+      - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI=https://auth.voicemessenger.mywire.org/realms/voice-messenger
+      - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI=http://keycloak:9090/realms/voice-messenger/protocol/openid-connect/certs
     networks:
       - app-net
 
@@ -79,6 +81,8 @@ services:
       - MONGO_PORT=${MONGO_PORT_ROOMS}
       - MONGO_USER=${MONGO_ROOT_USER}
       - MONGO_PASS=${MONGO_ROOT_PASSWORD}
+      - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI=https://auth.voicemessenger.mywire.org/realms/voice-messenger
+      - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI=http://keycloak:9090/realms/voice-messenger/protocol/openid-connect/certs
     networks:
       - app-net
 
@@ -104,6 +108,8 @@ services:
       - MONGO_PORT=${MONGO_PORT_CHAT}
       - MONGO_USER=${MONGO_ROOT_USER}
       - MONGO_PASS=${MONGO_ROOT_PASSWORD}
+      - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI=https://auth.voicemessenger.mywire.org/realms/voice-messenger
+      - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI=http://keycloak:9090/realms/voice-messenger/protocol/openid-connect/certs
     networks:
       - app-net
 
@@ -119,6 +125,8 @@ services:
       - MONGO_PORT=${MONGO_PORT_ANALYTICS}
       - MONGO_USER=${MONGO_ROOT_USER}
       - MONGO_PASS=${MONGO_ROOT_PASSWORD}
+      - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI=https://auth.voicemessenger.mywire.org/realms/voice-messenger
+      - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI=http://keycloak:9090/realms/voice-messenger/protocol/openid-connect/certs
     networks:
       - app-net
 
@@ -132,7 +140,7 @@ services:
     environment:
       - LIVEKIT_API_KEY=${LIVEKIT_API_KEY}
       - LIVEKIT_API_SECRET=${LIVEKIT_API_SECRET}
-      - LIVEKIT_EXTERNAL_URL=wss://livekit.voicemessenger.mywire.org
+      - LIVEKIT_EXTERNAL_URL=${LIVEKIT_EXTERNAL_URL}
       - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI=https://auth.voicemessenger.mywire.org/realms/voice-messenger
       - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI=http://keycloak:9090/realms/voice-messenger/protocol/openid-connect/certs
     networks:

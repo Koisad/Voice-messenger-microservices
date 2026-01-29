@@ -47,3 +47,16 @@ spring:
           uri: http://media-service:8888
           predicates:
             - Path=/api/media/**
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowedOrigins:
+              - "https://voicemessenger.mywire.org"
+            allowedMethods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+              - OPTIONS
+            allowedHeaders: "*"
+            allowCredentials: true

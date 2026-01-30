@@ -1,4 +1,4 @@
-import type { Server, Message, CreateServerRequest, SendMessageRequest } from '../types';
+import type { Server, Message, CreateServerRequest, SendMessageRequest, LiveKitTokenResponse } from '../types';
 import { getUserToken } from './config';
 
 const BASE_URL = '/api';
@@ -12,7 +12,7 @@ const getHeaders = () => {
 };
 
 export const api = {
-    // Servers
+    // Serwery
     getServers: async (): Promise<Server[]> => {
         const res = await fetch(`${BASE_URL}/servers`, { headers: getHeaders() });
         if (!res.ok) throw new Error('Failed to fetch servers');
@@ -29,7 +29,7 @@ export const api = {
         return res.json();
     },
 
-    // Members & Joining
+    // Dołączanie / Opuszczanie / Członkowie
     joinServer: async (serverId: string): Promise<void> => {
         const res = await fetch(`${BASE_URL}/servers/${serverId}/join`, {
             method: 'POST',
@@ -52,7 +52,7 @@ export const api = {
         return res.json();
     },
 
-    // Chat
+    // Czat
     getMessages: async (serverId: string, channelId: string): Promise<Message[]> => {
         const params = new URLSearchParams({ serverId, channelId });
         const res = await fetch(`${BASE_URL}/chat/history?${params.toString()}`, { headers: getHeaders() });
@@ -67,6 +67,17 @@ export const api = {
             body: JSON.stringify({ serverId, channelId, content } as SendMessageRequest)
         });
         if (!res.ok) throw new Error('Failed to send message');
+        return res.json();
+    },
+
+    // LiveKit (Głos/Wideo)
+    getLiveKitToken: async (channelId: string): Promise<LiveKitTokenResponse> => {
+        const res = await fetch(`${BASE_URL}/media/token`, {
+            method: 'POST',
+            headers: getHeaders(),
+            body: JSON.stringify({ channelId })
+        });
+        if (!res.ok) throw new Error('Failed to get media token');
         return res.json();
     }
 };

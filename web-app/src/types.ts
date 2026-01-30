@@ -3,17 +3,17 @@ export interface User {
     username: string;
 }
 
-export interface Server {
-    id: string;
-    name: string;
-    ownerId: string;
-    channels: Channel[];
-}
-
 export interface Channel {
     id: string;
     name: string;
     type: 'TEXT' | 'VOICE';
+}
+
+export interface Server {
+    id: string;
+    name: string; // Może być null w starych rekordach, obsłużymy to
+    ownerId: string;
+    channels: Channel[];
 }
 
 export interface Message {
@@ -33,4 +33,9 @@ export interface SendMessageRequest {
     serverId: string;
     channelId: string;
     content: string;
+}
+
+export interface LiveKitTokenResponse {
+    token: string;
+    serverUrl: string; // Lub 'url', zależnie od Twojego Java DTO. Tutaj przyjmuję serverUrl
 }

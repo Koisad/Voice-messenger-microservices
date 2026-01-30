@@ -1,4 +1,4 @@
-import { Server, Message, CreateServerRequest, SendMessageRequest, Channel } from '../types';
+import type { Server, Message, CreateServerRequest, SendMessageRequest } from '../types';
 import { getUserToken } from './config';
 
 const BASE_URL = '/api';

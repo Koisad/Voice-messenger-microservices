@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useAuth } from 'react-oidc-context';
 import { api } from './api/client';
-import { Server, Channel, Message } from './types';
+import type { Server, Message } from './types';
 import './App.css';
 import { Hash, Volume2, Plus, LogOut } from 'lucide-react';
 

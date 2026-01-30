@@ -5,7 +5,8 @@ import '@livekit/components-styles';
 import { api } from './api/client';
 import type { Server, Message } from './types';
 import './App.css';
-import { Hash, Volume2, Plus, LogOut, Copy, User } from 'lucide-react';
+// POPRAWKA 1: Usunięto nieużywany import 'User'
+import { Hash, Volume2, Plus, LogOut, Copy } from 'lucide-react';
 
 export default function App() {
     const auth = useAuth();
@@ -20,7 +21,7 @@ export default function App() {
     const [selectedChannelId, setSelectedChannelId] = useState<string | null>(null);
     const [showModal, setShowModal] = useState(false);
     const [modalMode, setModalMode] = useState<'CREATE' | 'JOIN'>('CREATE');
-    const [inputVal, setInputVal] = useState(""); // Nazwa serwera LUB ID serwera
+    const [inputVal, setInputVal] = useState("");
     const [messageInput, setMessageInput] = useState("");
 
     // --- STAN LIVEKIT (GŁOS) ---
@@ -45,7 +46,6 @@ export default function App() {
         if (!selectedChannel) return;
 
         if (selectedChannel.type === 'VOICE') {
-            // Wchodzimy na głosowy -> Pobierz token
             api.getLiveKitToken(selectedChannel.id)
                 .then(data => {
                     setLiveKitToken(data.token);
@@ -54,38 +54,33 @@ export default function App() {
                 })
                 .catch(err => console.error("Błąd LiveKit:", err));
         } else {
-            // Wchodzimy na tekstowy -> Wyłącz głos, pobierz wiadomości
             setIsVoiceActive(false);
             setLiveKitToken("");
             fetchMessages();
         }
     }, [selectedChannelId]);
 
-    // 3. Polling wiadomości (tylko na kanale tekstowym)
+    // 3. Polling wiadomości
     useEffect(() => {
         if (isVoiceActive || !selectedServerId || !selectedChannelId) return;
 
-        // Pierwsze pobranie
         fetchMessages();
-
         const interval = setInterval(fetchMessages, 3000);
         return () => clearInterval(interval);
     }, [selectedServerId, selectedChannelId, isVoiceActive]);
 
-    // 4. Pobieranie listy członków serwera
+    // 4. Członkowie
     useEffect(() => {
         if (selectedServerId) {
             api.getServerMembers(selectedServerId).then(setMembers).catch(console.error);
         }
     }, [selectedServerId]);
 
-    // 5. Scrollowanie czatu
+    // 5. Scroll
     useEffect(() => {
         bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages]);
 
-
-    // --- FUNKCJE POMOCNICZE ---
 
     const loadServers = async () => {
         try {
@@ -109,7 +104,7 @@ export default function App() {
                 setServers([...servers, newServer]);
                 setSelectedServerId(newServer.id);
             } else {
-                await api.joinServer(inputVal); // inputVal to tutaj ID
+                await api.joinServer(inputVal);
                 await loadServers();
             }
             setShowModal(false);
@@ -137,9 +132,6 @@ export default function App() {
         }
     };
 
-
-    // --- EKRANY ŁADOWANIA / LOGOWANIA ---
-
     if (auth.isLoading) return <div className="center-screen">Ładowanie...</div>;
     if (auth.error) return <div className="center-screen">Błąd logowania: {auth.error.message}</div>;
 
@@ -154,12 +146,9 @@ export default function App() {
         );
     }
 
-    // --- GŁÓWNY WIDOK APLIKACJI ---
-
     return (
         <div className="app-layout">
 
-            {/* 1. PASEK SERWERÓW */}
             <nav className="server-sidebar">
                 {servers.map(server => (
                     <div
@@ -187,7 +176,6 @@ export default function App() {
                 </div>
             </nav>
 
-            {/* 2. PASEK KANAŁÓW */}
             {selectedServer ? (
                 <div className="channel-sidebar">
                     <header className="server-header">
@@ -196,7 +184,15 @@ export default function App() {
                   ? selectedServer.name?.substring(0,15) + "..."
                   : selectedServer.name}
             </span>
-                        <Copy size={18} className="icon-btn" onClick={copyInvite} title="Skopiuj ID zaproszenia" />
+                        {/* POPRAWKA 2: Owinięcie ikony w div z title, bo Lucide nie obsługuje title bezpośrednio w strict TS */}
+                        <div
+                            className="icon-btn"
+                            onClick={copyInvite}
+                            title="Skopiuj ID zaproszenia"
+                            style={{ cursor: 'pointer', display: 'flex' }}
+                        >
+                            <Copy size={18} />
+                        </div>
                     </header>
 
                     <div className="channel-list">
@@ -223,7 +219,6 @@ export default function App() {
                 </div>
             )}
 
-            {/* 3. GŁÓWNY OBSZAR */}
             <main className="chat-area">
                 {!selectedServerId ? (
                     <div className="welcome">
@@ -231,7 +226,6 @@ export default function App() {
                         <p>Wybierz serwer z lewej strony lub stwórz nowy.</p>
                     </div>
                 ) : isVoiceActive && liveKitToken ? (
-                    // --- WIDOK VIDEO/AUDIO ---
                     <LiveKitRoom
                         video={false}
                         audio={true}
@@ -244,7 +238,6 @@ export default function App() {
                         <VideoConference />
                     </LiveKitRoom>
                 ) : (
-                    // --- WIDOK CZATU TEKSTOWEGO ---
                     <>
                         <header className="chat-header">
                             <Hash size={24} color="#949ba4" />
@@ -283,7 +276,6 @@ export default function App() {
                 )}
             </main>
 
-            {/* 4. LISTA CZŁONKÓW */}
             {selectedServer && !isVoiceActive && (
                 <aside className="members-sidebar">
                     <h3>CZŁONKOWIE — {members.length}</h3>
@@ -296,7 +288,6 @@ export default function App() {
                 </aside>
             )}
 
-            {/* 5. MODAL TWORZENIA / DOŁĄCZANIA */}
             {showModal && (
                 <div className="modal-overlay" onClick={(e) => { if(e.target === e.currentTarget) setShowModal(false) }}>
                     <div className="modal-content">

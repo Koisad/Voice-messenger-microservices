@@ -48,10 +48,10 @@ export const useChatSocket = ({ serverId, channelId, userToken, currentUserId, c
                 console.log('[STOMP]: ' + str);
             },
             onConnect: () => {
-                console.log(`Connected to STOMP. Subscribing to: /topic/server.${serverId}/channel.${channelId}`);
+                console.log(`Connected to STOMP. Subscribing to: /topic/server.${serverId}.channel.${channelId}`);
 
                 subscriptionRef.current = client.subscribe(
-                    `/topic/server.${serverId}/channel.${channelId}`,
+                    `/topic/server.${serverId}.channel.${channelId}`,
                     (msg: Message) => {
                         try {
                             const messageBody: ChatMessage = JSON.parse(msg.body);

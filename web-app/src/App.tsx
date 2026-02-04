@@ -7,6 +7,7 @@ import type { Server, Message } from './types';
 import './App.css';
 // POPRAWKA 1: Usunięto nieużywany import 'User'
 import { Hash, Volume2, Plus, LogOut, Copy } from 'lucide-react';
+import { useChatSocket } from './hooks/useChatSocket';
 
 export default function App() {
     const auth = useAuth();
@@ -29,6 +30,14 @@ export default function App() {
     const [liveKitUrl, setLiveKitUrl] = useState("");
     const [isVoiceActive, setIsVoiceActive] = useState(false);
 
+    // --- WEBSOCKET CHAT ---
+    const { socketMessages, sendMessage: sendSocketMessage } = useChatSocket({
+        serverId: selectedServerId,
+        channelId: selectedChannelId,
+        userToken: auth.user?.access_token,
+        currentUserId: auth.user?.profile.preferred_username
+    });
+
     const bottomRef = useRef<HTMLDivElement>(null);
     const selectedServer = servers.find(s => s.id === selectedServerId);
     const selectedChannel = selectedServer?.channels.find(c => c.id === selectedChannelId);
@@ -45,6 +54,9 @@ export default function App() {
     useEffect(() => {
         if (!selectedChannel) return;
 
+        // Reset wiadomości przy zmianie kanału
+        setMessages([]);
+
         if (selectedChannel.type === 'VOICE') {
             api.getLiveKitToken(selectedChannel.id)
                 .then(data => {
@@ -60,26 +72,29 @@ export default function App() {
         }
     }, [selectedChannelId]);
 
-    // 3. Polling wiadomości
-    useEffect(() => {
-        if (isVoiceActive || !selectedServerId || !selectedChannelId) return;
+    // 3. Scalanie REST history + WebSocket messages
+    const displayMessages = React.useMemo(() => {
+        const allMessages = [...messages, ...socketMessages];
+        const uniqueMap = new Map();
+        allMessages.forEach(msg => {
+            uniqueMap.set(msg.id, msg);
+        });
+        return Array.from(uniqueMap.values()).sort((a, b) =>
+            new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+        );
+    }, [messages, socketMessages]);
 
-        fetchMessages();
-        const interval = setInterval(fetchMessages, 3000);
-        return () => clearInterval(interval);
-    }, [selectedServerId, selectedChannelId, isVoiceActive]);
-
-    // 4. Członkowie
+    // 5. Członkowie
     useEffect(() => {
         if (selectedServerId) {
             api.getServerMembers(selectedServerId).then(setMembers).catch(console.error);
         }
     }, [selectedServerId]);
 
-    // 5. Scroll
+    // 4. Scroll
     useEffect(() => {
         bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }, [messages]);
+    }, [displayMessages]);
 
 
     const loadServers = async () => {
@@ -118,11 +133,20 @@ export default function App() {
         e.preventDefault();
         if (!messageInput.trim() || !selectedServerId || !selectedChannelId) return;
 
-        try {
-            await api.sendMessage(selectedServerId, selectedChannelId, messageInput);
+        // Próba wysłania przez WebSocket
+        const sentViaSocket = sendSocketMessage(messageInput);
+
+        if (sentViaSocket) {
             setMessageInput("");
-            fetchMessages();
-        } catch (err) { console.error(err); }
+            // Wiadomość przyjdzie przez WebSocket
+        } else {
+            // Fallback REST jeśli WebSocket nie działa
+            try {
+                await api.sendMessage(selectedServerId, selectedChannelId, messageInput);
+                setMessageInput("");
+                fetchMessages();
+            } catch (err) { console.error(err); }
+        }
     };
 
     const copyInvite = () => {
@@ -245,8 +269,8 @@ export default function App() {
                         </header>
 
                         <div className="messages-list">
-                            {messages.map((msg, i) => (
-                                <div key={i} className="message-item">
+                            {displayMessages.map((msg) => (
+                                <div key={msg.id} className="message-item">
                                     <div className="message-avatar" />
                                     <div className="message-content">
                                         <div className="message-header">

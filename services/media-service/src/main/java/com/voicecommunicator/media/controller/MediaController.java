@@ -19,12 +19,12 @@ public class MediaController {
     @PostMapping("/token")
     public ResponseEntity<LiveKitTokenResponseDTO> getToken(
             @RequestBody JoinChannelRequestDTO request,
-            @AuthenticationPrincipal Jwt jwt
-    ) {
+            @AuthenticationPrincipal Jwt jwt) {
         String userId = jwt.getSubject();
+        String username = jwt.getClaimAsString("preferred_username");
         String channelId = request.getChannelId();
 
-        String token = liveKitService.generateToken(userId, channelId);
+        String token = liveKitService.generateToken(userId, username, channelId);
 
         String url = liveKitService.getLiveKitUrl();
 

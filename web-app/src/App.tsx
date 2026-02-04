@@ -55,8 +55,8 @@ export default function App() {
     useEffect(() => {
         if (!selectedChannel || !selectedServerId) return;
 
-        // Reset wiadomości przy zmianie kanału - USUNIĘTE, ABY ZACHOWAĆ HISTORIĘ
-        // setMessages([]);
+        // Reset wiadomości przy zmianie kanału
+        setMessages([]);
 
         // Pobierz historię czatu dla obu typów kanałów
         api.getMessages(selectedServerId, selectedChannel.id)
@@ -267,7 +267,7 @@ export default function App() {
                                 style={{ height: '100%', display: 'flex', flexDirection: 'column' }}
                                 onError={(err) => console.error("LiveKit Error:", err)}
                             >
-                                <VideoConference chatMessageFormatter={() => <></>} />
+                                <VideoConference />
                             </LiveKitRoom>
                         </div>
                         <div className="voice-chat-sidebar">

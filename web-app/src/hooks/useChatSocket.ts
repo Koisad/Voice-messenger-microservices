@@ -34,7 +34,7 @@ export const useChatSocket = ({ serverId, channelId, userToken, currentUserId, c
             return;
         }
 
-        // setSocketMessages([]); // ZMIANA: Nie czyścimy wiadomości przy zmianie kanału, App.tsx to obsłuży
+        setSocketMessages([]);
 
         const client = new Client({
             webSocketFactory: () => new SockJS(`${window.location.origin}/ws`),

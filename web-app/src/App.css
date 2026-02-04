@@ -148,13 +148,45 @@ body, html, #root {
 .user-bar .username { font-weight: 600; font-size: 14px; }
 .user-bar .status { font-size: 12px; color: var(--text-muted); }
 
-/* 3. CHAT AREA */
+/* 3. CHAT AREA / MAIN */
 .chat-area {
     flex: 1;
     background-color: var(--bg-primary);
     display: flex;
     flex-direction: column;
     position: relative;
+    overflow: hidden; /* Fix layout overflow issues */
+}
+
+/* --- VOICE CHAT SPECIFIC --- */
+.voice-chat-container {
+    display: flex;
+    height: 100%;
+    width: 100%;
+}
+
+.voice-video-area {
+    flex: 3;
+    border-right: 1px solid var(--bg-tertiary); /* Better border color */
+    background-color: #000; /* Video background usually black */
+    display: flex;
+    flex-direction: column;
+}
+
+.voice-chat-sidebar {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 300px;
+    background-color: var(--bg-primary);
+}
+
+/* --- TEXT CHAT CONTAINER --- */
+.text-chat-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    width: 100%;
 }
 
 .chat-header {
@@ -165,6 +197,7 @@ body, html, #root {
     gap: 8px;
     border-bottom: 1px solid #26272d;
     font-weight: 600;
+    flex-shrink: 0; /* Header size fixed */
 }
 
 .messages-list {
@@ -174,6 +207,7 @@ body, html, #root {
     display: flex;
     flex-direction: column;
     gap: 16px;
+    min-height: 0; /* Fix flex child overflow */
 }
 
 .message-item {
@@ -208,6 +242,7 @@ body, html, #root {
 .chat-input-area {
     padding: 0 16px 24px;
     background-color: var(--bg-primary);
+    flex-shrink: 0;
 }
 .chat-input-wrapper {
     background-color: #383a40;

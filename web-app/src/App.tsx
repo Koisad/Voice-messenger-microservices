@@ -255,8 +255,8 @@ export default function App() {
                         <p>Wybierz serwer z lewej strony lub stwórz nowy.</p>
                     </div>
                 ) : isVoiceActive && liveKitToken ? (
-                    <div className="voice-chat-container" style={{ display: 'flex', height: '100%' }}>
-                        <div className="video-area" style={{ flex: 3, borderRight: '1px solid #2b2d31' }}>
+                    <div className="voice-chat-container">
+                        <div className="voice-video-area">
                             <LiveKitRoom
                                 video={false}
                                 audio={true}
@@ -265,11 +265,12 @@ export default function App() {
                                 connect={true}
                                 data-lk-theme="default"
                                 style={{ height: '100%', display: 'flex', flexDirection: 'column' }}
+                                onError={(err) => console.error("LiveKit Error:", err)}
                             >
                                 <VideoConference chatMessageFormatter={() => <></>} />
                             </LiveKitRoom>
                         </div>
-                        <div className="chat-area-side" style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: '300px' }}>
+                        <div className="voice-chat-sidebar">
                             <header className="chat-header">
                                 <Hash size={24} color="#949ba4" />
                                 <span>{selectedChannel?.name || "Czat głosowy"}</span>
@@ -306,7 +307,7 @@ export default function App() {
                         </div>
                     </div>
                 ) : (
-                    <>
+                    <div className="text-chat-container">
                         <header className="chat-header">
                             <Hash size={24} color="#949ba4" />
                             <span>{selectedChannel?.name || "Czat"}</span>
@@ -340,7 +341,7 @@ export default function App() {
                                 />
                             </div>
                         </form>
-                    </>
+                    </div>
                 )}
             </main>
 

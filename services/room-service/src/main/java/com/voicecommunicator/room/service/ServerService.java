@@ -1,6 +1,5 @@
 package com.voicecommunicator.room.service;
 
-
 import com.voicecommunicator.room.exception.MemberNotFoundException;
 import com.voicecommunicator.room.exception.ServerNotFoundException;
 import com.voicecommunicator.room.exception.ServerOwnerException;
@@ -22,7 +21,7 @@ public class ServerService {
     private final ServerRepository serverRepository;
 
     @Transactional
-    public Server createServer(String name, String userId) {
+    public Server createServer(String name, String userId, String username) {
         Server server = new Server();
         server.setName(name);
         server.setOwnerId(userId);
@@ -33,6 +32,7 @@ public class ServerService {
         Member member = new Member();
         member.setServerId(savedServer.getId());
         member.setUserId(userId);
+        member.setUsername(username);
         member.setRole(Role.OWNER);
         memberRepository.save(member);
 
@@ -46,23 +46,22 @@ public class ServerService {
                 .map(Member::getServerId)
                 .toList();
 
-        List<Server> serverList = serverRepository.findAllById(serverIds);
-
-        return serverList;
+        return serverRepository.findAllById(serverIds);
     }
 
-    public void joinServer(String serverId, String userId) {
-        if(!serverRepository.existsById(serverId)) {
+    public void joinServer(String serverId, String userId, String username) {
+        if (!serverRepository.existsById(serverId)) {
             throw new ServerNotFoundException(serverId);
         }
 
-        if(memberRepository.existsByServerIdAndUserId(serverId, userId)) {
+        if (memberRepository.existsByServerIdAndUserId(serverId, userId)) {
             return;
         }
 
         Member member = new Member();
         member.setServerId(serverId);
         member.setUserId(userId);
+        member.setUsername(username);
         member.setRole(Role.MEMBER);
         memberRepository.save(member);
     }
@@ -78,13 +77,17 @@ public class ServerService {
         memberRepository.deleteByServerIdAndUserId(serverId, userId);
     }
 
-    public List<String> getServerMembers(String serverId) {
-        if(!serverRepository.existsById(serverId)) {
+    public List<com.voicecommunicator.room.dto.MemberDTO> getServerMembers(String serverId) {
+        if (!serverRepository.existsById(serverId)) {
             throw new ServerNotFoundException(serverId);
         }
 
         return memberRepository.findByServerId(serverId).stream()
-                .map(Member::getUserId)
+                .map(member -> com.voicecommunicator.room.dto.MemberDTO.builder()
+                        .userId(member.getUserId())
+                        .username(member.getUsername())
+                        .role(member.getRole())
+                        .build())
                 .toList();
     }
 

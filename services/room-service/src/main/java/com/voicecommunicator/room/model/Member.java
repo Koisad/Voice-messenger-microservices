@@ -12,6 +12,8 @@ public class Member {
 
     private String serverId;
 
+    private String username;
+
     private String userId;
 
     private Role role;

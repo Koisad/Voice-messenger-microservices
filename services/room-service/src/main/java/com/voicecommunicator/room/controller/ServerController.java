@@ -19,12 +19,14 @@ public class ServerController {
     private final ServerService serverService;
 
     @PostMapping
-    public ResponseEntity<Server> createServer(@RequestBody CreateServerRequestDTO createServerRequestDTO, @AuthenticationPrincipal Jwt jwt) {
+    public ResponseEntity<Server> createServer(@RequestBody CreateServerRequestDTO createServerRequestDTO,
+                                               @AuthenticationPrincipal Jwt jwt) {
 
         String serverName = createServerRequestDTO.getName();
         String userId = jwt.getSubject();
+        String username = jwt.getClaimAsString("preferred_username");
 
-        return ResponseEntity.ok(serverService.createServer(serverName, userId));
+        return ResponseEntity.ok(serverService.createServer(serverName, userId, username));
     }
 
     @GetMapping
@@ -37,7 +39,8 @@ public class ServerController {
     @PostMapping("/{serverId}/join")
     public ResponseEntity<Void> joinServer(@PathVariable String serverId, @AuthenticationPrincipal Jwt jwt) {
         String userId = jwt.getSubject();
-        serverService.joinServer(serverId, userId);
+        String username = jwt.getClaimAsString("preferred_username");
+        serverService.joinServer(serverId, userId, username);
         return ResponseEntity.ok().build();
     }
 
@@ -49,7 +52,8 @@ public class ServerController {
     }
 
     @GetMapping("/{serverId}/members")
-    public ResponseEntity<List<String>> getServerMembers(@PathVariable String serverId, @AuthenticationPrincipal Jwt jwt) {
+    public ResponseEntity<List<com.voicecommunicator.room.dto.MemberDTO>> getServerMembers(
+            @PathVariable String serverId) {
         return ResponseEntity.ok(serverService.getServerMembers(serverId));
     }
 }

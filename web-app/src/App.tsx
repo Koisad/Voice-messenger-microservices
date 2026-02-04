@@ -19,7 +19,9 @@ export default function App() {
 
     // --- STAN UI ---
     const [selectedServerId, setSelectedServerId] = useState<string | null>(null);
-    const [selectedChannelId, setSelectedChannelId] = useState<string | null>(null);
+    const [selectedChannelId, setSelectedChannelId] = useState<string | null>(null); // Kanał "widoczny" (główny widok)
+    const [chatChannelId, setChatChannelId] = useState<string | null>(null); // Kanał "czatowy" (do wyświetlania wiadomości)
+
     const [showModal, setShowModal] = useState(false);
     const [modalMode, setModalMode] = useState<'CREATE' | 'JOIN'>('CREATE');
     const [inputVal, setInputVal] = useState("");
@@ -33,7 +35,7 @@ export default function App() {
     // --- WEBSOCKET CHAT ---
     const { socketMessages, sendMessage: sendSocketMessage } = useChatSocket({
         serverId: selectedServerId,
-        channelId: selectedChannelId,
+        channelId: chatChannelId, // Używamy kanału czatu, niekoniecznie wybranego (jeśli to głosowy)
         userToken: auth.user?.access_token,
         currentUserId: auth.user?.profile.sub, // UUID z JWT
         currentUsername: auth.user?.profile.preferred_username // Username do wysłania
@@ -42,6 +44,8 @@ export default function App() {
     const bottomRef = useRef<HTMLDivElement>(null);
     const selectedServer = servers.find(s => s.id === selectedServerId);
     const selectedChannel = selectedServer?.channels.find(c => c.id === selectedChannelId);
+    // Znajdź obiekt kanału, który jest aktualnie czatem (dla nazwy itp.)
+    const chatChannel = selectedServer?.channels.find(c => c.id === chatChannelId);
 
     // 1. Inicjalizacja po zalogowaniu
     useEffect(() => {
@@ -55,14 +59,10 @@ export default function App() {
     useEffect(() => {
         if (!selectedChannel || !selectedServerId) return;
 
-        // Reset wiadomości przy zmianie kanału
-        setMessages([]);
+        // Reset wiadomości tylko jeśli zmienia się kanał CZATU
+        // (Logika przeniesiona niżej do useEffect zależnego od chatChannelId)
 
-        // Pobierz historię czatu dla obu typów kanałów
-        api.getMessages(selectedServerId, selectedChannel.id)
-            .then(setMessages)
-            .catch(console.error);
-
+        // Obsługa LiveKit (tylko dla kanałów głosowych)
         if (selectedChannel.type === 'VOICE') {
             api.getLiveKitToken(selectedChannel.id)
                 .then(data => {
@@ -76,6 +76,19 @@ export default function App() {
             setLiveKitToken("");
         }
     }, [selectedChannelId, selectedServerId]);
+
+    // 2a. Pobieranie wiadomości przy zmianie chatChannelId
+    useEffect(() => {
+        if (!chatChannelId || !selectedServerId) return;
+
+        setMessages([]); // Reset przy zmianie kanału czatu
+
+        api.getMessages(selectedServerId, chatChannelId)
+            .then(setMessages)
+            .catch(console.error);
+
+    }, [chatChannelId, selectedServerId]);
+
 
     // 3. Scalanie REST history + WebSocket messages
     const displayMessages = React.useMemo(() => {
@@ -101,6 +114,22 @@ export default function App() {
         bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [displayMessages]);
 
+    // Pomocnicza funkcja do wybierania domyślnego kanału tekstowego
+    const selectDefaultChannels = (server: Server) => {
+        if (server.channels && server.channels.length > 0) {
+            // Domyślny widok: pierwszy kanał (dowolny)
+            setSelectedChannelId(server.channels[0].id);
+
+            // Domyślny czat: pierwszy kanał TEKSTOWY
+            const firstText = server.channels.find(c => c.type === 'TEXT');
+            if (firstText) {
+                setChatChannelId(firstText.id);
+            } else {
+                // Fallback: jeśli nie ma tekstowych, null lub ID pierwszego (ale wtedy czat może nie działać dobrze)
+                setChatChannelId(null);
+            }
+        }
+    };
 
     const loadServers = async () => {
         try {
@@ -110,8 +139,8 @@ export default function App() {
     };
 
     const fetchMessages = () => {
-        if (!selectedServerId || !selectedChannelId) return;
-        api.getMessages(selectedServerId, selectedChannelId).then(setMessages).catch(console.error);
+        if (!selectedServerId || !chatChannelId) return;
+        api.getMessages(selectedServerId, chatChannelId).then(setMessages).catch(console.error);
     };
 
     const handleModalSubmit = async (e: React.FormEvent) => {
@@ -123,6 +152,7 @@ export default function App() {
                 const newServer = await api.createServer(inputVal);
                 setServers([...servers, newServer]);
                 setSelectedServerId(newServer.id);
+                selectDefaultChannels(newServer); // Ustaw domyślne kanały dla nowego serwera
             } else {
                 await api.joinServer(inputVal);
                 await loadServers();
@@ -136,7 +166,7 @@ export default function App() {
 
     const handleSendMessage = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!messageInput.trim() || !selectedServerId || !selectedChannelId) return;
+        if (!messageInput.trim() || !selectedServerId || !chatChannelId) return;
 
         // Próba wysłania przez WebSocket
         const sentViaSocket = sendSocketMessage(messageInput);
@@ -147,7 +177,7 @@ export default function App() {
         } else {
             // Fallback REST jeśli WebSocket nie działa
             try {
-                await api.sendMessage(selectedServerId, selectedChannelId, messageInput);
+                await api.sendMessage(selectedServerId, chatChannelId, messageInput);
                 setMessageInput("");
                 fetchMessages();
             } catch (err) { console.error(err); }
@@ -185,7 +215,7 @@ export default function App() {
                         className={`server-icon ${selectedServerId === server.id ? 'active' : ''}`}
                         onClick={() => {
                             setSelectedServerId(server.id);
-                            if (server.channels?.length > 0) setSelectedChannelId(server.channels[0].id);
+                            selectDefaultChannels(server);
                         }}
                         title={server.name}
                     >
@@ -229,7 +259,13 @@ export default function App() {
                             <div
                                 key={channel.id}
                                 className={`channel-item ${selectedChannelId === channel.id ? 'active' : ''}`}
-                                onClick={() => setSelectedChannelId(channel.id)}
+                                onClick={() => {
+                                    setSelectedChannelId(channel.id);
+                                    // Jeśli to kanał tekstowy, ustawiamy go też jako kanał czatu
+                                    if (channel.type === 'TEXT') {
+                                        setChatChannelId(channel.id);
+                                    }
+                                }}
                             >
                                 {channel.type === 'VOICE' ? <Volume2 size={18} /> : <Hash size={18} />}
                                 {channel.name}
@@ -273,7 +309,7 @@ export default function App() {
                         <div className="voice-chat-sidebar">
                             <header className="chat-header">
                                 <Hash size={24} color="#949ba4" />
-                                <span>{selectedChannel?.name || "Czat głosowy"}</span>
+                                <span>{chatChannel?.name || "Czat"}</span>
                             </header>
 
                             <div className="messages-list">
@@ -300,7 +336,7 @@ export default function App() {
                                         className="chat-input"
                                         value={messageInput}
                                         onChange={e => setMessageInput(e.target.value)}
-                                        placeholder={`Napisz na #${selectedChannel?.name || "czacie"}`}
+                                        placeholder={`Napisz na #${chatChannel?.name || "czacie"}`}
                                     />
                                 </div>
                             </form>
@@ -310,7 +346,7 @@ export default function App() {
                     <div className="text-chat-container">
                         <header className="chat-header">
                             <Hash size={24} color="#949ba4" />
-                            <span>{selectedChannel?.name || "Czat"}</span>
+                            <span>{chatChannel?.name || "Czat"}</span>
                         </header>
 
                         <div className="messages-list">
@@ -337,7 +373,7 @@ export default function App() {
                                     className="chat-input"
                                     value={messageInput}
                                     onChange={e => setMessageInput(e.target.value)}
-                                    placeholder={`Napisz na #${selectedChannel?.name || "czacie"}`}
+                                    placeholder={`Napisz na #${chatChannel?.name || "czacie"}`}
                                 />
                             </div>
                         </form>

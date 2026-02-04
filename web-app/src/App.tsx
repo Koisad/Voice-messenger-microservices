@@ -55,8 +55,8 @@ export default function App() {
     useEffect(() => {
         if (!selectedChannel || !selectedServerId) return;
 
-        // Reset wiadomości przy zmianie kanału
-        setMessages([]);
+        // Reset wiadomości przy zmianie kanału - USUNIĘTE, ABY ZACHOWAĆ HISTORIĘ
+        // setMessages([]);
 
         // Pobierz historię czatu dla obu typów kanałów
         api.getMessages(selectedServerId, selectedChannel.id)
@@ -255,17 +255,56 @@ export default function App() {
                         <p>Wybierz serwer z lewej strony lub stwórz nowy.</p>
                     </div>
                 ) : isVoiceActive && liveKitToken ? (
-                    <LiveKitRoom
-                        video={false}
-                        audio={true}
-                        token={liveKitToken}
-                        serverUrl={liveKitUrl}
-                        connect={true}
-                        data-lk-theme="default"
-                        style={{ height: '100%', display: 'flex', flexDirection: 'column' }}
-                    >
-                        <VideoConference />
-                    </LiveKitRoom>
+                    <div className="voice-chat-container" style={{ display: 'flex', height: '100%' }}>
+                        <div className="video-area" style={{ flex: 3, borderRight: '1px solid #2b2d31' }}>
+                            <LiveKitRoom
+                                video={false}
+                                audio={true}
+                                token={liveKitToken}
+                                serverUrl={liveKitUrl}
+                                connect={true}
+                                data-lk-theme="default"
+                                style={{ height: '100%', display: 'flex', flexDirection: 'column' }}
+                            >
+                                <VideoConference chatMessageFormatter={() => <></>} />
+                            </LiveKitRoom>
+                        </div>
+                        <div className="chat-area-side" style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: '300px' }}>
+                            <header className="chat-header">
+                                <Hash size={24} color="#949ba4" />
+                                <span>{selectedChannel?.name || "Czat głosowy"}</span>
+                            </header>
+
+                            <div className="messages-list">
+                                {displayMessages.map((msg) => (
+                                    <div key={msg.id} className="message-item">
+                                        <div className="message-avatar" />
+                                        <div className="message-content">
+                                            <div className="message-header">
+                                                <span className="author">
+                                                    {msg.senderUsername || (msg.senderId.length > 20 ? msg.senderId.substring(0, 8) + '...' : msg.senderId)}
+                                                </span>
+                                                <span className="time">{new Date(msg.timestamp).toLocaleTimeString()}</span>
+                                            </div>
+                                            <div className="text">{msg.content}</div>
+                                        </div>
+                                    </div>
+                                ))}
+                                <div ref={bottomRef} />
+                            </div>
+
+                            <form className="chat-input-area" onSubmit={handleSendMessage}>
+                                <div className="chat-input-wrapper">
+                                    <input
+                                        className="chat-input"
+                                        value={messageInput}
+                                        onChange={e => setMessageInput(e.target.value)}
+                                        placeholder={`Napisz na #${selectedChannel?.name || "czacie"}`}
+                                    />
+                                </div>
+                            </form>
+                        </div>
+                    </div>
                 ) : (
                     <>
                         <header className="chat-header">

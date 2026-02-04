@@ -1,4 +1,4 @@
-import type { Server, Message, CreateServerRequest, SendMessageRequest, LiveKitTokenResponse } from '../types';
+import type { Server, Message, CreateServerRequest, SendMessageRequest, LiveKitTokenResponse, MemberDTO } from '../types';
 import { getUserToken } from './config';
 
 const BASE_URL = '/api';
@@ -46,7 +46,7 @@ export const api = {
         if (!res.ok) throw new Error('Failed to leave server');
     },
 
-    getServerMembers: async (serverId: string): Promise<string[]> => {
+    getServerMembers: async (serverId: string): Promise<MemberDTO[]> => {
         const res = await fetch(`${BASE_URL}/servers/${serverId}/members`, { headers: getHeaders() });
         if (!res.ok) throw new Error('Failed to fetch members');
         return res.json();

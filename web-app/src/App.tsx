@@ -3,7 +3,7 @@ import { useAuth } from 'react-oidc-context';
 import { LiveKitRoom, VideoConference } from '@livekit/components-react';
 import '@livekit/components-styles';
 import { api } from './api/client';
-import type { Server, Message } from './types';
+import type { Server, Message, MemberDTO } from './types';
 import './App.css';
 // POPRAWKA 1: Usunięto nieużywany import 'User'
 import { Hash, Volume2, Plus, LogOut, Copy } from 'lucide-react';
@@ -15,7 +15,7 @@ export default function App() {
     // --- STAN DANYCH ---
     const [servers, setServers] = useState<Server[]>([]);
     const [messages, setMessages] = useState<Message[]>([]);
-    const [members, setMembers] = useState<string[]>([]);
+    const [members, setMembers] = useState<MemberDTO[]>([]);
 
     // --- STAN UI ---
     const [selectedServerId, setSelectedServerId] = useState<string | null>(null);
@@ -387,7 +387,7 @@ export default function App() {
                     {members.map((m, i) => (
                         <div key={i} className="member-item">
                             <div className="message-avatar small" />
-                            <span>{m}</span>
+                            <span>{m.username}</span>
                         </div>
                     ))}
                 </aside>

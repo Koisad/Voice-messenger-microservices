@@ -40,3 +40,11 @@ export interface LiveKitTokenResponse {
     token: string;
     serverUrl: string; // Lub 'url', zależnie od Twojego Java DTO. Tutaj przyjmuję serverUrl
 }
+
+export interface Member {
+    userId: string;
+    username: string;
+    role: string;
+}
+
+export type MemberDTO = Member;

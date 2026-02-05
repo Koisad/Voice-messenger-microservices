@@ -23,6 +23,19 @@ export const useUserNotifications = ({
     const clientRef = useRef<Client | null>(null);
     const subscriptionRef = useRef<StompSubscription | null>(null);
 
+    // Use refs for callbacks
+    const onFriendRequestRef = useRef(onFriendRequest);
+    const onFriendAcceptedRef = useRef(onFriendAccepted);
+    const onFriendRemovedRef = useRef(onFriendRemoved);
+    const onIncomingCallRef = useRef(onIncomingCall);
+
+    useEffect(() => {
+        onFriendRequestRef.current = onFriendRequest;
+        onFriendAcceptedRef.current = onFriendAccepted;
+        onFriendRemovedRef.current = onFriendRemoved;
+        onIncomingCallRef.current = onIncomingCall;
+    }, [onFriendRequest, onFriendAccepted, onFriendRemoved, onIncomingCall]);
+
     useEffect(() => {
         // Cleanup previous connection
         if (clientRef.current) {
@@ -61,31 +74,31 @@ export const useUserNotifications = ({
 
                         switch (notification.type) {
                             case 'FRIEND_REQUEST':
-                                if (onFriendRequest && notification.payload) {
-                                    onFriendRequest({
+                                if (onFriendRequestRef.current && notification.payload) {
+                                    onFriendRequestRef.current({
                                         senderId: notification.payload.senderId,
                                         senderName: notification.payload.senderName
                                     });
                                 }
                                 break;
                             case 'FRIEND_ACCEPTED':
-                                if (onFriendAccepted && notification.payload) {
-                                    onFriendAccepted({
+                                if (onFriendAcceptedRef.current && notification.payload) {
+                                    onFriendAcceptedRef.current({
                                         friendId: notification.payload.friendId,
                                         friendName: notification.payload.friendName
                                     });
                                 }
                                 break;
                             case 'FRIEND_REMOVED':
-                                if (onFriendRemoved && notification.payload) {
-                                    onFriendRemoved({
+                                if (onFriendRemovedRef.current && notification.payload) {
+                                    onFriendRemovedRef.current({
                                         friendId: notification.payload.friendId
                                     });
                                 }
                                 break;
                             case 'CALL_INCOMING':
-                                if (onIncomingCall && notification.payload) {
-                                    onIncomingCall({
+                                if (onIncomingCallRef.current && notification.payload) {
+                                    onIncomingCallRef.current({
                                         callerId: notification.payload.callerId,
                                         callerName: notification.payload.callerName,
                                         roomId: notification.payload.roomId,
@@ -121,5 +134,5 @@ export const useUserNotifications = ({
                 client.deactivate();
             }
         };
-    }, [userId, userToken, onFriendRequest, onFriendAccepted, onFriendRemoved, onIncomingCall]);
+    }, [userId, userToken]); // Callbacks removed from dependencies
 };

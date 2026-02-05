@@ -19,6 +19,15 @@ export const useServerNotifications = ({
     const clientRef = useRef<Client | null>(null);
     const subscriptionRef = useRef<StompSubscription | null>(null);
 
+    // Use refs for callbacks
+    const onMemberJoinedRef = useRef(onMemberJoined);
+    const onMemberLeftRef = useRef(onMemberLeft);
+
+    useEffect(() => {
+        onMemberJoinedRef.current = onMemberJoined;
+        onMemberLeftRef.current = onMemberLeft;
+    }, [onMemberJoined, onMemberLeft]);
+
     useEffect(() => {
         // Cleanup previous connection
         if (clientRef.current) {
@@ -57,13 +66,13 @@ export const useServerNotifications = ({
 
                         switch (notification.type) {
                             case 'MEMBER_JOINED':
-                                if (onMemberJoined && notification.payload?.member) {
-                                    onMemberJoined(notification.payload.member);
+                                if (onMemberJoinedRef.current && notification.payload?.member) {
+                                    onMemberJoinedRef.current(notification.payload.member);
                                 }
                                 break;
                             case 'MEMBER_LEFT':
-                                if (onMemberLeft && notification.payload) {
-                                    onMemberLeft({
+                                if (onMemberLeftRef.current && notification.payload) {
+                                    onMemberLeftRef.current({
                                         userId: notification.payload.userId,
                                         username: notification.payload.username
                                     });
@@ -97,5 +106,5 @@ export const useServerNotifications = ({
                 client.deactivate();
             }
         };
-    }, [serverId, userToken, onMemberJoined, onMemberLeft]);
+    }, [serverId, userToken]); // Callbacks removed from dependencies
 };

@@ -1,4 +1,4 @@
-import type { Server, Message, CreateServerRequest, SendMessageRequest, LiveKitTokenResponse, MemberDTO } from '../types';
+import type { Server, Message, CreateServerRequest, SendMessageRequest, LiveKitTokenResponse, MemberDTO, Friendship } from '../types';
 import { getUserToken } from './config';
 
 const BASE_URL = '/api';
@@ -78,6 +78,84 @@ export const api = {
             body: JSON.stringify({ channelId })
         });
         if (!res.ok) throw new Error('Failed to get media token');
+        return res.json();
+    },
+
+    // User Management
+    syncUser: async (): Promise<void> => {
+        const res = await fetch(`${BASE_URL}/users/sync`, {
+            method: 'POST',
+            headers: getHeaders()
+        });
+        if (!res.ok) throw new Error('Failed to sync user');
+    },
+
+    searchUsers: async (query: string): Promise<{ userId: string; username: string }[]> => {
+        const params = new URLSearchParams({ query });
+        const res = await fetch(`${BASE_URL}/users/search?${params.toString()}`, {
+            headers: getHeaders()
+        });
+        if (!res.ok) throw new Error('Failed to search users');
+        return res.json();
+    },
+
+    // Friendships
+    sendFriendRequest: async (addresseeId: string, addresseeUsername: string): Promise<void> => {
+        const res = await fetch(`${BASE_URL}/friendships/request`, {
+            method: 'POST',
+            headers: getHeaders(),
+            body: JSON.stringify({ addresseeId, addresseeUsername })
+        });
+        if (!res.ok) throw new Error('Failed to send friend request');
+    },
+
+    acceptFriendRequest: async (requestId: string): Promise<void> => {
+        const res = await fetch(`${BASE_URL}/friendships/accept/${requestId}`, {
+            method: 'POST',
+            headers: getHeaders()
+        });
+        if (!res.ok) throw new Error('Failed to accept friend request');
+    },
+
+    rejectFriendRequest: async (requestId: string): Promise<void> => {
+        const res = await fetch(`${BASE_URL}/friendships/${requestId}`, {
+            method: 'DELETE',
+            headers: getHeaders()
+        });
+        if (!res.ok) throw new Error('Failed to reject friend request');
+    },
+
+    getFriendRequests: async (): Promise<Friendship[]> => {
+        const res = await fetch(`${BASE_URL}/friendships/requests`, {
+            headers: getHeaders()
+        });
+        if (!res.ok) throw new Error('Failed to fetch friend requests');
+        return res.json();
+    },
+
+    getFriends: async (): Promise<Friendship[]> => {
+        const res = await fetch(`${BASE_URL}/friendships`, {
+            headers: getHeaders()
+        });
+        if (!res.ok) throw new Error('Failed to fetch friends');
+        return res.json();
+    },
+
+    removeFriend: async (friendId: string): Promise<void> => {
+        const res = await fetch(`${BASE_URL}/friendships/${friendId}`, {
+            method: 'DELETE',
+            headers: getHeaders()
+        });
+        if (!res.ok) throw new Error('Failed to remove friend');
+    },
+
+    // Direct Messages
+    getDMChannel: async (addresseeId: string): Promise<{ channelId: string }> => {
+        const res = await fetch(`${BASE_URL}/chat/dm/${addresseeId}`, {
+            method: 'POST',
+            headers: getHeaders()
+        });
+        if (!res.ok) throw new Error('Failed to get DM channel');
         return res.json();
     }
 };

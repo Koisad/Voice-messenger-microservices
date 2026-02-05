@@ -5,9 +5,12 @@ import '@livekit/components-styles';
 import { api } from './api/client';
 import type { Server, Message, MemberDTO } from './types';
 import './App.css';
-// POPRAWKA 1: Usunięto nieużywany import 'User'
-import { Hash, Volume2, Plus, LogOut, Copy } from 'lucide-react';
+import { Hash, Volume2, Plus, LogOut, Copy, Users, MessageCircle } from 'lucide-react';
 import { useChatSocket } from './hooks/useChatSocket';
+import { useWebRTCCall } from './hooks/useWebRTCCall';
+import { Friends } from './components/Friends';
+import { DirectMessages } from './components/DirectMessages';
+import { VoiceCallModal } from './components/VoiceCallModal';
 
 export default function App() {
     const auth = useAuth();
@@ -18,6 +21,8 @@ export default function App() {
     const [members, setMembers] = useState<MemberDTO[]>([]);
 
     // --- STAN UI ---
+    type ViewMode = 'servers' | 'friends' | 'dms';
+    const [viewMode, setViewMode] = useState<ViewMode>('servers');
     const [selectedServerId, setSelectedServerId] = useState<string | null>(null);
     const [selectedChannelId, setSelectedChannelId] = useState<string | null>(null); // Kanał "widoczny" (główny widok)
     const [chatChannelId, setChatChannelId] = useState<string | null>(null); // Kanał "czatowy" (do wyświetlania wiadomości)
@@ -47,9 +52,17 @@ export default function App() {
     // Znajdź obiekt kanału, który jest aktualnie czatem (dla nazwy itp.)
     const chatChannel = selectedServer?.channels.find(c => c.id === chatChannelId);
 
-    // 1. Inicjalizacja po zalogowaniu
+    // --- WEBRTC CALL ---
+    const webrtcCall = useWebRTCCall({
+        userToken: auth.user?.access_token,
+        currentUserId: auth.user?.profile.sub,
+        currentUsername: auth.user?.profile.preferred_username
+    });
+
+    // 1. Inicjalizacja po zalogowaniu + sync użytkownika
     useEffect(() => {
         if (auth.isAuthenticated) {
+            api.syncUser().catch(console.error); // Sync użytkownika do AppUser
             loadServers();
             window.history.replaceState({}, document.title, window.location.pathname);
         }
@@ -205,15 +218,44 @@ export default function App() {
         );
     }
 
+    const handleStartDM = (friendId: string, friendUsername: string) => {
+        setViewMode('dms');
+    };
+
+    const handleStartCall = (friendId: string, friendUsername: string) => {
+        webrtcCall.startCall(friendId, friendUsername);
+    };
+
     return (
         <div className="app-layout">
 
             <nav className="server-sidebar">
+                {/* Friends and DMs icons */}
+                <div
+                    className={`server-icon ${viewMode === 'friends' ? 'active' : ''}`}
+                    onClick={() => setViewMode('friends')}
+                    title="Znajomi"
+                >
+                    <Users size={24} />
+                </div>
+
+                <div
+                    className={`server-icon ${viewMode === 'dms' ? 'active' : ''}`}
+                    onClick={() => setViewMode('dms')}
+                    title="Wiadomości Prywatne"
+                >
+                    <MessageCircle size={24} />
+                </div>
+
+                <div className="sidebar-separator" />
+
+                {/* Servers */}
                 {servers.map(server => (
                     <div
                         key={server.id}
-                        className={`server-icon ${selectedServerId === server.id ? 'active' : ''}`}
+                        className={`server-icon ${viewMode === 'servers' && selectedServerId === server.id ? 'active' : ''}`}
                         onClick={() => {
+                            setViewMode('servers');
                             setSelectedServerId(server.id);
                             selectDefaultChannels(server);
                         }}
@@ -284,7 +326,27 @@ export default function App() {
                 </div>
             )}
 
-            <main className="chat-area">
+            {/* Conditional render based on view mode */}
+            {viewMode === 'friends' && (
+                <Friends
+                    currentUserId={auth.user?.profile.sub || ''}
+                    currentUsername={auth.user?.profile.preferred_username || ''}
+                    onStartDM={handleStartDM}
+                    onStartCall={handleStartCall}
+                />
+            )}
+
+            {viewMode === 'dms' && (
+                <DirectMessages
+                    currentUserId={auth.user?.profile.sub || ''}
+                    currentUsername={auth.user?.profile.preferred_username || ''}
+                    userToken={auth.user?.access_token}
+                    onStartCall={handleStartCall}
+                    onBack={() => setViewMode('servers')}
+                />
+            )}
+
+            <main className="chat-area" style={{ display: viewMode === 'servers' ? 'flex' : 'none' }}>
                 {!selectedServerId ? (
                     <div className="welcome">
                         <h2>Witaj w Voice Messenger 👋</h2>
@@ -429,6 +491,16 @@ export default function App() {
                     </div>
                 </div>
             )}
+
+            {/* Voice Call Modal */}
+            <VoiceCallModal
+                status={webrtcCall.callStatus}
+                remotePeer={webrtcCall.remotePeer}
+                remoteStream={webrtcCall.remoteStream}
+                onAnswer={webrtcCall.answerCall}
+                onReject={webrtcCall.rejectCall}
+                onEnd={webrtcCall.endCall}
+            />
 
         </div>
     );

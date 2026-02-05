@@ -28,7 +28,7 @@ export const useSignaling = ({
 
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
         const host = window.location.host;
-        const wsUrl = `${protocol}//${host}/signal?access_token=${userToken}`;
+        const wsUrl = `${protocol}//${host}/ws/signal?access_token=${userToken}`;
 
         const ws = new WebSocket(wsUrl);
         wsRef.current = ws;

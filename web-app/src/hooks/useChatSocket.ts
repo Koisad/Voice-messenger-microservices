@@ -29,7 +29,7 @@ export const useChatSocket = ({ serverId, channelId, userToken, currentUserId, c
             clientRef.current = null;
         }
 
-        if (!serverId || !channelId || !userToken) {
+        if (!channelId || !userToken) {
             setSocketMessages([]);
             return;
         }
@@ -48,10 +48,15 @@ export const useChatSocket = ({ serverId, channelId, userToken, currentUserId, c
                 console.log('[STOMP]: ' + str);
             },
             onConnect: () => {
-                console.log(`Connected to STOMP. Subscribing to: /topic/server.${serverId}.channel.${channelId}`);
+                // DM używa /topic/dm.{channelId}, server chat używa /topic/server.{serverId}.channel.{channelId}
+                const topic = serverId
+                    ? `/topic/server.${serverId}.channel.${channelId}`
+                    : `/topic/dm.${channelId}`;
+
+                console.log(`Connected to STOMP. Subscribing to: ${topic}`);
 
                 subscriptionRef.current = client.subscribe(
-                    `/topic/server.${serverId}.channel.${channelId}`,
+                    topic,
                     (msg: Message) => {
                         try {
                             const messageBody: ChatMessage = JSON.parse(msg.body);
@@ -100,9 +105,14 @@ export const useChatSocket = ({ serverId, channelId, userToken, currentUserId, c
             return false;
         }
 
-        if (clientRef.current && clientRef.current.connected && serverId && channelId && userToken) {
+        if (clientRef.current && clientRef.current.connected && channelId && userToken) {
+            // DM używa /app/dm/{channelId}, server chat używa /app/send/{serverId}/{channelId}
+            const destination = serverId
+                ? `/app/send/${serverId}/${channelId}`
+                : `/app/dm/${channelId}`;
+
             clientRef.current.publish({
-                destination: `/app/send/${serverId}/${channelId}`,
+                destination,
                 headers: {
                     Authorization: `Bearer ${userToken}`
                 },

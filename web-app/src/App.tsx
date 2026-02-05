@@ -218,7 +218,7 @@ export default function App() {
         );
     }
 
-    const handleStartDM = (friendId: string, friendUsername: string) => {
+    const handleStartDM = () => {
         setViewMode('dms');
     };
 

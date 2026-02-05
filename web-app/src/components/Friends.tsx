@@ -11,7 +11,7 @@ interface FriendsProps {
     onStartCall: (friendId: string, friendUsername: string) => void;
 }
 
-export const Friends: React.FC<FriendsProps> = ({ currentUserId, currentUsername, onStartDM, onStartCall }) => {
+export const Friends: React.FC<FriendsProps> = ({ currentUserId, onStartDM, onStartCall }) => {
     const [activeTab, setActiveTab] = useState<'friends' | 'requests'>('friends');
     const [friends, setFriends] = useState<Friendship[]>([]);
     const [requests, setRequests] = useState<Friendship[]>([]);

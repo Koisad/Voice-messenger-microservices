@@ -23,7 +23,7 @@ export const VoiceCallModal: React.FC<VoiceCallModalProps> = ({
     const [muted, setMuted] = React.useState(false);
     const [callDuration, setCallDuration] = React.useState(0);
     const audioRef = useRef<HTMLAudioElement>(null);
-    const timerRef = useRef<NodeJS.Timeout | null>(null);
+    const timerRef = useRef<number | null>(null);
 
     useEffect(() => {
         if (remoteStream && audioRef.current) {

@@ -27,7 +27,7 @@ export const DirectMessages: React.FC<DirectMessagesProps> = ({
     const bottomRef = useRef<HTMLDivElement>(null);
 
     const { socketMessages, sendMessage: sendSocketMessage } = useChatSocket({
-        serverId: null,
+        serverId: "dm",  // All DMs use constant serverId = "dm"
         channelId: selectedFriend?.channelId || null,
         userToken,
         currentUserId,
@@ -75,8 +75,8 @@ export const DirectMessages: React.FC<DirectMessagesProps> = ({
 
     const loadMessages = async (channelId: string) => {
         try {
-            // DM messages don't have serverId, so we pass empty string or handle it in backend
-            const msgs = await api.getMessages('', channelId);
+            // DM messages use constant serverId = "dm"
+            const msgs = await api.getMessages('dm', channelId);
             setMessages(msgs);
         } catch (err) {
             console.error('Failed to load messages:', err);
@@ -93,9 +93,9 @@ export const DirectMessages: React.FC<DirectMessagesProps> = ({
         if (sentViaSocket) {
             setMessageInput('');
         } else {
-            // Fallback REST
+            // Fallback REST - use "dm" as serverId
             try {
-                await api.sendMessage('', selectedFriend.channelId, messageInput);
+                await api.sendMessage('dm', selectedFriend.channelId, messageInput);
                 setMessageInput('');
                 loadMessages(selectedFriend.channelId);
             } catch (err) {

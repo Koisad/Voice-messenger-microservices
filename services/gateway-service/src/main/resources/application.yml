@@ -27,6 +27,10 @@ spring:
       default-filters:
         - TokenRelay
       routes:
+        - id: signaling-route
+          uri: ${SIGNALING_URI}
+          predicates:
+            - Path=/ws/signal/**
         - id: chat-route
           uri: ${CHAT_URI}
           predicates:
@@ -35,10 +39,6 @@ spring:
           uri: ${ROOM_URI}
           predicates:
             - Path=/api/servers/**, /api/friendships/**, /api/users/**
-        - id: signaling-route
-          uri: ${SIGNALING_URI}
-          predicates:
-            - Path=/ws/signal/**
         - id: ai-route
           uri: ${AI_URI}
           predicates:

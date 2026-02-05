@@ -34,7 +34,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     private final JwtDecoder jwtDecoder;
 
-    @Value("${STOMP_RELAY_HOST}")
+    @Value("${INFRA_HOST}")
     private String relayHost;
 
     @Value("${STOMP_RELAY_PORT:61613}")

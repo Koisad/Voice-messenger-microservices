@@ -16,14 +16,22 @@ export const useWebRTCCall = ({ userToken, currentUserId, currentUsername }: Use
     const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
     const pcRef = useRef<RTCPeerConnection | null>(null);
 
-    const onIncomingCall = async (from: string, fromUsername: string, offer: RTCSessionDescriptionInit) => {
-        setRemotePeer({ id: from, username: fromUsername });
-        setCallStatus('ringing');
+    const onIncomingCall = useCallback(async (from: string, fromUsername: string, offer: RTCSessionDescriptionInit) => {
+        console.log('[WebRTC] onIncomingCall triggered! From:', from, 'Username:', fromUsername);
+        try {
+            setRemotePeer({ id: from, username: fromUsername });
+            setCallStatus('ringing');
+            console.log('[WebRTC] Call status set to ringing');
 
-        // Store offer to accept later
-        pcRef.current = createPeerConnection(from);
-        await pcRef.current.setRemoteDescription(new RTCSessionDescription(offer));
-    };
+            // Store offer to accept later
+            pcRef.current = createPeerConnection(from);
+            await pcRef.current.setRemoteDescription(new RTCSessionDescription(offer));
+            console.log('[WebRTC] Remote description set');
+        } catch (error) {
+            console.error('[WebRTC] Error in onIncomingCall:', error);
+            endCall();
+        }
+    }, []);
 
     const onCallAnswered = useCallback(async (answer: RTCSessionDescriptionInit) => {
         if (pcRef.current) {

@@ -32,6 +32,10 @@ export const VoiceCallModal: React.FC<VoiceCallModalProps> = ({
     useEffect(() => {
         if (remoteStream && audioRef.current) {
             audioRef.current.srcObject = remoteStream;
+            // Explicitly attempt to play
+            audioRef.current.play().catch(err => {
+                console.error('[VoiceCallModal] Failed to play audio:', err);
+            });
         }
     }, [remoteStream]);
 

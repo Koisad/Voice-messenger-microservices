@@ -7,6 +7,7 @@ interface VoiceCallModalProps {
     status: CallStatus;
     remotePeer: { id: string; username: string } | null;
     remoteStream: MediaStream | null;
+    localStream: MediaStream | null;
     onAnswer?: () => void;
     onReject?: () => void;
     onEnd: () => void;
@@ -16,6 +17,7 @@ export const VoiceCallModal: React.FC<VoiceCallModalProps> = ({
     status,
     remotePeer,
     remoteStream,
+    localStream,
     onAnswer,
     onReject,
     onEnd
@@ -58,8 +60,13 @@ export const VoiceCallModal: React.FC<VoiceCallModalProps> = ({
     };
 
     const toggleMute = () => {
-        setMuted(!muted);
-        // TODO: Implement actual muting of local stream
+        if (localStream) {
+            const audioTrack = localStream.getAudioTracks()[0];
+            if (audioTrack) {
+                audioTrack.enabled = !audioTrack.enabled;
+                setMuted(!audioTrack.enabled);
+            }
+        }
     };
 
     if (status === 'idle') return null;

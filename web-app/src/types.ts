@@ -48,3 +48,39 @@ export interface Member {
 }
 
 export type MemberDTO = Member;
+
+// Friendship types
+export type FriendshipStatus = 'PENDING' | 'FRIENDS';
+
+export interface Friendship {
+    id: string;
+    status: FriendshipStatus;
+    requesterId: string;
+    requesterUsername: string;
+    addresseeId: string;
+    addresseeUsername: string;
+}
+
+export interface FriendUser {
+    userId: string;
+    username: string;
+}
+
+// DM types
+export interface DMConversation {
+    friendId: string;
+    friendUsername: string;
+    channelId: string;
+    lastMessage?: Message;
+}
+
+// WebRTC Signaling types
+export type SignalType = 'offer' | 'answer' | 'ice-candidate' | 'call-request' | 'call-accepted' | 'call-rejected' | 'call-ended';
+
+export interface SignalMessage {
+    type: SignalType;
+    sender: string;      // userId (set by server)
+    target: string;      // userId of recipient
+    data?: any;          // WebRTC payload (SDP or ICE candidate)
+    senderUsername?: string; // Optional username for display
+}

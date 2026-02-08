@@ -49,49 +49,57 @@ public class AnalysisService {
     private boolean callAICheck(String textToAnalyze) {
         try {
             String prompt = String.format("""
-                Analyze the following text for toxicity, hate speech, or profanity.
-                Text: "%s"
+                [INST] You are a content moderation system.
+                Analyze this text: "%s"
                 
-                Return a JSON object with a single boolean field "isToxic".
-                Example: {"isToxic": true}
-                Do not add markdown formatting like ```json.
-                """, textToAnalyze.replace("\"", "'"));
+                Is it toxic, hate speech, or profanity?
+                Return ONLY a JSON object: {"isToxic": true} or {"isToxic": false}
+                [/INST]
+                """, textToAnalyze.replace("\"", "'").replace("\n", " "));
 
             Map<String, Object> requestBody = Map.of(
-                    "contents", List.of(
-                            Map.of("parts", List.of(
-                                    Map.of("text", prompt)
-                            ))
+                    "inputs", prompt,
+                    "parameters", Map.of(
+                            "return_full_text", false,
+                            "max_new_tokens", 50,
+                            "temperature", 0.1
                     )
             );
 
             RestClient restClient = RestClient.create();
+
             String response = restClient.post()
-                    .uri(aiUrl + aiApiKey)
+                    .uri(aiUrl.trim())
+                    .header("Authorization", "Bearer " + aiApiKey.trim())
                     .contentType(MediaType.APPLICATION_JSON)
                     .body(requestBody)
                     .retrieve()
                     .body(String.class);
 
-            JsonNode root = objectMapper.readTree(response);
-            String textResponse = root.path("candidates")
-                    .get(0)
-                    .path("content")
-                    .path("parts")
-                    .get(0)
-                    .path("text")
-                    .asText();
+            log.info("HF Response Raw: {}", response);
 
-            String cleanJson = textResponse
-                    .replace("```json", "")
-                    .replace("```", "")
-                    .trim();
+            JsonNode rootArray = objectMapper.readTree(response);
 
-            JsonNode jsonResponse = objectMapper.readTree(cleanJson);
-            return jsonResponse.path("isToxic").asBoolean(false);
+            if (rootArray.isArray() && !rootArray.isEmpty()) {
+                String generatedText = rootArray.get(0).path("generated_text").asText();
+
+                String cleanJson = generatedText
+                        .replace("```json", "")
+                        .replace("```", "")
+                        .trim();
+
+                JsonNode jsonResponse = objectMapper.readTree(cleanJson);
+                return jsonResponse.path("isToxic").asBoolean(false);
+            }
+
+            return false;
 
         } catch (Exception e) {
-            log.error("AI connection error: {}", e.getMessage());
+            log.error("Hugging Face connection error: {}", e.getMessage());
+
+            if (e.getMessage().contains("503")) {
+                log.warn("Model is loading");
+            }
             return false;
         }
     }

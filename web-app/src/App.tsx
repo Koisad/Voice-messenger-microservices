@@ -13,6 +13,7 @@ import { useUserNotifications } from './hooks/useUserNotifications';
 import { Friends } from './components/Friends';
 import { DirectMessages } from './components/DirectMessages';
 import { VoiceCallModal } from './components/VoiceCallModal';
+import { LoginPage } from './components/LoginPage';
 
 export default function App() {
     const auth = useAuth();
@@ -281,15 +282,14 @@ export default function App() {
     if (auth.error) return <div className="center-screen">Błąd logowania: {auth.error.message}</div>;
 
     if (!auth.isAuthenticated) {
-        return (
-            <div className="center-screen flex-col">
-                <h1>Voice Messenger</h1>
-                <button className="btn btn-primary" onClick={() => auth.signinRedirect()}>
-                    Zaloguj przez Keycloak
-                </button>
-            </div>
-        );
+        return <LoginPage />;
     }
+
+    const handleLogout = () => {
+        auth.signoutRedirect({
+            post_logout_redirect_uri: window.location.origin,
+        });
+    };
 
     const handleStartDM = () => {
         setViewMode('dms');
@@ -345,7 +345,7 @@ export default function App() {
                     <Plus />
                 </div>
 
-                <div className="server-icon logout-icon" onClick={() => auth.signoutRedirect()}>
+                <div className="server-icon logout-icon" onClick={handleLogout}>
                     <LogOut />
                 </div>
             </nav>

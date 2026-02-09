@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { api } from '../api/client';
 import type { Friendship, Message } from '../types';
-import { /* Phone, */ ArrowLeft, Send } from 'lucide-react';
+import { /* Phone, */ ArrowLeft, Send, AlertTriangle, Eye, EyeOff } from 'lucide-react';
 import { useChatSocket } from '../hooks/useChatSocket';
 import './DirectMessages.css';
 
@@ -24,7 +24,19 @@ export const DirectMessages: React.FC<DirectMessagesProps> = ({
     const [selectedFriend, setSelectedFriend] = useState<{ id: string; username: string; channelId: string } | null>(null);
     const [messages, setMessages] = useState<Message[]>([]);
     const [messageInput, setMessageInput] = useState('');
+    const [revealedToxicIds, setRevealedToxicIds] = useState<Set<string>>(new Set());
     const bottomRef = useRef<HTMLDivElement>(null);
+
+    const toggleToxicReveal = (msgId: string) => {
+        setRevealedToxicIds(prev => {
+            const next = new Set(prev);
+            if (next.has(msgId)) next.delete(msgId);
+            else next.add(msgId);
+            return next;
+        });
+    };
+
+    const isMessageToxic = (msg: Message): boolean => !!(msg.isToxic || msg.toxic);
 
     const { socketMessages, sendMessage: sendSocketMessage } = useChatSocket({
         serverId: "dm",  // All DMs use constant serverId = "dm"
@@ -105,9 +117,9 @@ export const DirectMessages: React.FC<DirectMessagesProps> = ({
     };
 
     const displayMessages = React.useMemo(() => {
-        const allMessages = [...messages, ...socketMessages];
-        const uniqueMap = new Map();
-        allMessages.forEach(msg => uniqueMap.set(msg.id, msg));
+        const uniqueMap = new Map<string, Message>();
+        messages.forEach(msg => uniqueMap.set(msg.id, msg));
+        socketMessages.forEach(msg => uniqueMap.set(msg.id, msg));
         return Array.from(uniqueMap.values()).sort((a, b) =>
             new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
         );
@@ -141,20 +153,41 @@ export const DirectMessages: React.FC<DirectMessagesProps> = ({
                 </header>
 
                 <div className="messages-list">
-                    {displayMessages.map((msg) => (
-                        <div key={msg.id} className="message-item">
-                            <div className="message-avatar" />
-                            <div className="message-content">
-                                <div className="message-header">
-                                    <span className="author">
-                                        {msg.senderUsername || (msg.senderId.length > 20 ? msg.senderId.substring(0, 8) + '...' : msg.senderId)}
-                                    </span>
-                                    <span className="time">{new Date(msg.timestamp).toLocaleTimeString()}</span>
+                    {displayMessages.map((msg) => {
+                        const toxic = isMessageToxic(msg);
+                        const revealed = revealedToxicIds.has(msg.id);
+                        return (
+                            <div key={msg.id} className={`message-item ${toxic ? 'message-toxic' : ''}`}>
+                                <div className="message-avatar" />
+                                <div className="message-content">
+                                    <div className="message-header">
+                                        <span className="author">
+                                            {msg.senderUsername || (msg.senderId.length > 20 ? msg.senderId.substring(0, 8) + '...' : msg.senderId)}
+                                        </span>
+                                        <span className="time">{new Date(msg.timestamp).toLocaleTimeString()}</span>
+                                        {toxic && <span className="toxic-badge"><AlertTriangle size={14} /> Potencjalnie wulgarna</span>}
+                                    </div>
+                                    {toxic && !revealed ? (
+                                        <div className="toxic-hidden-content">
+                                            <span>Treść ukryta — wykryto potencjalnie wulgarną treść</span>
+                                            <button className="toxic-reveal-btn" onClick={() => toggleToxicReveal(msg.id)}>
+                                                <Eye size={14} /> Pokaż treść
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <div className="text">
+                                            {msg.content}
+                                            {toxic && revealed && (
+                                                <button className="toxic-reveal-btn toxic-hide-btn" onClick={() => toggleToxicReveal(msg.id)}>
+                                                    <EyeOff size={14} /> Ukryj
+                                                </button>
+                                            )}
+                                        </div>
+                                    )}
                                 </div>
-                                <div className="text">{msg.content}</div>
                             </div>
-                        </div>
-                    ))}
+                        );
+                    })}
                     <div ref={bottomRef} />
                 </div>
 

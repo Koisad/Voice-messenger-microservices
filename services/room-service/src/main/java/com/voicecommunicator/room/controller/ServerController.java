@@ -1,6 +1,8 @@
 package com.voicecommunicator.room.controller;
 
+import com.voicecommunicator.room.dto.AddChannelRequestDTO;
 import com.voicecommunicator.room.dto.CreateServerRequestDTO;
+import com.voicecommunicator.room.model.Channel;
 import com.voicecommunicator.room.model.Server;
 import com.voicecommunicator.room.service.ServerService;
 import lombok.RequiredArgsConstructor;
@@ -55,5 +57,20 @@ public class ServerController {
     public ResponseEntity<List<com.voicecommunicator.room.dto.MemberDTO>> getServerMembers(
             @PathVariable String serverId) {
         return ResponseEntity.ok(serverService.getServerMembers(serverId));
+    }
+
+    @PostMapping("/{serverId}/channels")
+    public ResponseEntity<Channel> addChannel(@PathVariable String serverId, @RequestBody AddChannelRequestDTO request, @AuthenticationPrincipal Jwt jwt) {
+        String userId = jwt.getSubject();
+
+        return ResponseEntity.ok(serverService.addChannel(serverId, request.getChannelName(), request.getType(), userId));
+    }
+
+    @DeleteMapping("/{serverId}/channels/{channelId}")
+    public ResponseEntity<Void> removeChannel(@PathVariable String serverId, @PathVariable String channelId, @AuthenticationPrincipal Jwt jwt) {
+        String userId = jwt.getSubject();
+
+        serverService.removeChannel(serverId, channelId, userId);
+        return ResponseEntity.ok().build();
     }
 }

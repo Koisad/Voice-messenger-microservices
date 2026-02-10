@@ -2,6 +2,7 @@ package com.voicecommunicator.room.service;
 
 import com.voicecommunicator.common.event.NotificationEvent;
 import com.voicecommunicator.room.dto.MemberDTO;
+import com.voicecommunicator.room.model.Channel;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -34,5 +35,25 @@ public class RoomMemberNotificationService {
         String destination = "/topic/server." + serverId + ".members";
         messagingTemplate.convertAndSend(destination, event);
         log.info("Send member left notification to server: {}, member: {}", serverId, username);
+    }
+
+    public void notifyChannelAdded(String serverId, Channel channel) {
+        NotificationEvent event = new NotificationEvent(
+                "CHANNEL_ADDED",
+                Map.of("channel", channel)
+        );
+        String destination = "/topic/server." + serverId + ".channels";
+        messagingTemplate.convertAndSend(destination, event);
+        log.info("Send channel added notification to server: {}", serverId);
+    }
+
+    public void notifyChannelRemoved(String serverId, String channelId) {
+        NotificationEvent event = new NotificationEvent(
+                "CHANNEL_REMOVED",
+                Map.of("channelId", channelId)
+        );
+        String destination = "/topic/server." + serverId + ".channels";
+        messagingTemplate.convertAndSend(destination, event);
+        log.info("Send channel removed notification to server: {}", serverId);
     }
 }

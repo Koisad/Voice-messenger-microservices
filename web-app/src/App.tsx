@@ -119,6 +119,16 @@ export default function App() {
             if (selectedServerId) {
                 api.getServerMembers(selectedServerId).then(setMembers).catch(console.error);
             }
+        },
+        onServerDeleted: (deletedServerId) => {
+            console.log('[App] Server deleted:', deletedServerId);
+            setServers(prev => prev.filter(s => s.id !== deletedServerId));
+            if (selectedServerId === deletedServerId) {
+                setSelectedServerId(null);
+                setSelectedChannelId(null);
+                setChatChannelId(null);
+                showToast('Serwer został usunięty przez właściciela', 'info');
+            }
         }
     });
 

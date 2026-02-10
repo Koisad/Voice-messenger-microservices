@@ -5,7 +5,7 @@ import '@livekit/components-styles';
 import { api } from './api/client';
 import type { Server, Message, MemberDTO } from './types';
 import './App.css';
-import { Hash, Volume2, Plus, LogOut, Copy, Users, MessageCircle, AlertTriangle, Eye, EyeOff } from 'lucide-react';
+import { Hash, Volume2, Plus, LogOut, Copy, Users, MessageCircle, AlertTriangle, Eye, EyeOff, Trash2, UserX, DoorOpen } from 'lucide-react';
 import { useChatSocket } from './hooks/useChatSocket';
 import { useWebRTCCall } from './hooks/useWebRTCCall';
 import { useServerNotifications } from './hooks/useServerNotifications';
@@ -35,6 +35,18 @@ export default function App() {
     const [inputVal, setInputVal] = useState("");
     const [messageInput, setMessageInput] = useState("");
     const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+
+    // --- CHANNEL MANAGEMENT ---
+    const [showAddChannel, setShowAddChannel] = useState(false);
+    const [newChannelName, setNewChannelName] = useState('');
+    const [newChannelType, setNewChannelType] = useState<'TEXT' | 'VOICE'>('TEXT');
+
+    // --- KICK MEMBER ---
+    const [kickTarget, setKickTarget] = useState<{ userId: string; username: string } | null>(null);
+
+    // --- CONFIRM MODALS ---
+    const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
+    const [channelToDelete, setChannelToDelete] = useState<{ id: string; name: string } | null>(null);
 
     // --- STAN LIVEKIT (GŁOS) ---
     const [liveKitToken, setLiveKitToken] = useState("");
@@ -293,6 +305,67 @@ export default function App() {
 
     const requestLogout = () => setShowLogoutConfirm(true);
 
+    const currentUserId = auth.user?.profile.sub || '';
+    const isServerOwner = selectedServer?.ownerId === currentUserId;
+
+    const handleAddChannel = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!newChannelName.trim() || !selectedServerId) return;
+        try {
+            await api.addChannel(selectedServerId, newChannelName.trim(), newChannelType);
+            const updatedServers = await api.getServers();
+            setServers(updatedServers);
+            setNewChannelName('');
+            setShowAddChannel(false);
+        } catch (err) {
+            console.error('Failed to add channel:', err);
+        }
+    };
+
+    const handleRemoveChannel = async () => {
+        if (!selectedServerId || !channelToDelete) return;
+        try {
+            await api.removeChannel(selectedServerId, channelToDelete.id);
+            const updatedServers = await api.getServers();
+            setServers(updatedServers);
+            if (selectedChannelId === channelToDelete.id) {
+                const updated = updatedServers.find(s => s.id === selectedServerId);
+                if (updated) selectDefaultChannels(updated);
+            }
+            setChannelToDelete(null);
+        } catch (err) {
+            console.error('Failed to remove channel:', err);
+            setChannelToDelete(null);
+        }
+    };
+
+    const handleLeaveServer = async () => {
+        if (!selectedServerId) return;
+        try {
+            await api.leaveServer(selectedServerId);
+            setServers(prev => prev.filter(s => s.id !== selectedServerId));
+            setSelectedServerId(null);
+            setSelectedChannelId(null);
+            setChatChannelId(null);
+            setShowLeaveConfirm(false);
+        } catch (err) {
+            console.error('Failed to leave server:', err);
+            setShowLeaveConfirm(false);
+        }
+    };
+
+    const handleKickMember = async () => {
+        if (!selectedServerId || !kickTarget) return;
+        try {
+            await api.removeMember(selectedServerId, kickTarget.userId);
+            setMembers(prev => prev.filter(m => m.userId !== kickTarget.userId));
+            setKickTarget(null);
+        } catch (err) {
+            console.error('Failed to kick member:', err);
+            setKickTarget(null);
+        }
+    };
+
     const handleStartDM = () => {
         setViewMode('dms');
     };
@@ -360,35 +433,89 @@ export default function App() {
                                 ? selectedServer.name?.substring(0, 15) + "..."
                                 : selectedServer.name}
                         </span>
-                        {/* POPRAWKA 2: Owinięcie ikony w div z title, bo Lucide nie obsługuje title bezpośrednio w strict TS */}
-                        <div
-                            className="icon-btn"
-                            onClick={copyInvite}
-                            title="Skopiuj ID zaproszenia"
-                            style={{ cursor: 'pointer', display: 'flex' }}
-                        >
-                            <Copy size={18} />
+                        <div className="server-header-actions">
+                            <div
+                                className="icon-btn"
+                                onClick={copyInvite}
+                                title="Skopiuj ID zaproszenia"
+                            >
+                                <Copy size={18} />
+                            </div>
                         </div>
                     </header>
 
                     <div className="channel-list">
+                        <div className="channel-section-header">
+                            <span>KANAŁY</span>
+                            {isServerOwner && (
+                                <button className="channel-add-btn" onClick={() => setShowAddChannel(!showAddChannel)} title="Dodaj kanał">
+                                    <Plus size={16} />
+                                </button>
+                            )}
+                        </div>
+
+                        {showAddChannel && isServerOwner && (
+                            <form className="channel-add-form" onSubmit={handleAddChannel}>
+                                <input
+                                    className="channel-add-input"
+                                    value={newChannelName}
+                                    onChange={e => setNewChannelName(e.target.value)}
+                                    placeholder="Nazwa kanału"
+                                    autoFocus
+                                />
+                                <div className="channel-add-type">
+                                    <button
+                                        type="button"
+                                        className={`type-btn ${newChannelType === 'TEXT' ? 'active' : ''}`}
+                                        onClick={() => setNewChannelType('TEXT')}
+                                    >
+                                        <Hash size={14} /> Tekst
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className={`type-btn ${newChannelType === 'VOICE' ? 'active' : ''}`}
+                                        onClick={() => setNewChannelType('VOICE')}
+                                    >
+                                        <Volume2 size={14} /> Głos
+                                    </button>
+                                </div>
+                                <button type="submit" className="btn btn-primary channel-add-submit">Dodaj</button>
+                            </form>
+                        )}
+
                         {selectedServer.channels?.map(channel => (
                             <div
                                 key={channel.id}
                                 className={`channel-item ${selectedChannelId === channel.id ? 'active' : ''}`}
                                 onClick={() => {
                                     setSelectedChannelId(channel.id);
-                                    // Jeśli to kanał tekstowy, ustawiamy go też jako kanał czatu
                                     if (channel.type === 'TEXT') {
                                         setChatChannelId(channel.id);
                                     }
                                 }}
                             >
-                                {channel.type === 'VOICE' ? <Volume2 size={18} /> : <Hash size={18} />}
-                                {channel.name}
+                                <span className="channel-item-name">
+                                    {channel.type === 'VOICE' ? <Volume2 size={18} /> : <Hash size={18} />}
+                                    {channel.name}
+                                </span>
+                                {isServerOwner && (
+                                    <button
+                                        className="channel-delete-btn"
+                                        onClick={(e) => { e.stopPropagation(); setChannelToDelete({ id: channel.id, name: channel.name }); }}
+                                        title="Usuń kanał"
+                                    >
+                                        <Trash2 size={14} />
+                                    </button>
+                                )}
                             </div>
                         ))}
                     </div>
+
+                    {!isServerOwner && (
+                        <button className="leave-server-btn" onClick={() => setShowLeaveConfirm(true)}>
+                            <DoorOpen size={16} /> Opuść serwer
+                        </button>
+                    )}
 
                     <div className="user-bar">
                         <div className="username">{auth.user?.profile.preferred_username}</div>
@@ -566,7 +693,21 @@ export default function App() {
                     {members.map((m, i) => (
                         <div key={i} className="member-item">
                             <div className="message-avatar small" />
-                            <span>{m.username}</span>
+                            <div className="member-info">
+                                <span className="member-name">{m.username}</span>
+                                <span className={`member-role-badge ${m.role === 'OWNER' ? 'role-owner' : 'role-member'}`}>
+                                    {m.role === 'OWNER' ? 'Właściciel' : 'Członek'}
+                                </span>
+                            </div>
+                            {isServerOwner && m.userId !== currentUserId && (
+                                <button
+                                    className="member-kick-btn"
+                                    onClick={() => setKickTarget({ userId: m.userId, username: m.username })}
+                                    title="Wyrzuć z serwera"
+                                >
+                                    <UserX size={16} />
+                                </button>
+                            )}
                         </div>
                     ))}
                 </aside>
@@ -634,6 +775,66 @@ export default function App() {
                             </button>
                             <button className="btn logout-modal-confirm" onClick={handleLogout}>
                                 Wyloguj
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {kickTarget && (
+                <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setKickTarget(null); }}>
+                    <div className="logout-modal">
+                        <div className="logout-modal-icon" style={{ background: 'rgba(237, 66, 69, 0.12)' }}>
+                            <UserX size={32} />
+                        </div>
+                        <h2>Wyrzucić użytkownika?</h2>
+                        <p>Czy na pewno chcesz wyrzucić <strong>{kickTarget.username}</strong> z serwera?</p>
+                        <div className="logout-modal-actions">
+                            <button className="btn logout-modal-cancel" onClick={() => setKickTarget(null)}>
+                                Anuluj
+                            </button>
+                            <button className="btn logout-modal-confirm" onClick={handleKickMember}>
+                                Wyrzuć
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {showLeaveConfirm && (
+                <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setShowLeaveConfirm(false); }}>
+                    <div className="logout-modal">
+                        <div className="logout-modal-icon" style={{ background: 'rgba(237, 66, 69, 0.12)' }}>
+                            <DoorOpen size={32} />
+                        </div>
+                        <h2>Opuścić serwer?</h2>
+                        <p>Czy na pewno chcesz opuścić serwer <strong>{selectedServer?.name}</strong>?</p>
+                        <div className="logout-modal-actions">
+                            <button className="btn logout-modal-cancel" onClick={() => setShowLeaveConfirm(false)}>
+                                Anuluj
+                            </button>
+                            <button className="btn logout-modal-confirm" onClick={handleLeaveServer}>
+                                Opuść
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {channelToDelete && (
+                <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setChannelToDelete(null); }}>
+                    <div className="logout-modal">
+                        <div className="logout-modal-icon" style={{ background: 'rgba(237, 66, 69, 0.12)' }}>
+                            <Trash2 size={32} />
+                        </div>
+                        <h2>Usunąć kanał?</h2>
+                        <p>Czy na pewno chcesz usunąć kanał <strong>#{channelToDelete.name}</strong>? Tej operacji nie można cofnąć.</p>
+                        <div className="logout-modal-actions">
+                            <button className="btn logout-modal-cancel" onClick={() => setChannelToDelete(null)}>
+                                Anuluj
+                            </button>
+                            <button className="btn logout-modal-confirm" onClick={handleRemoveChannel}>
+                                Usuń
                             </button>
                         </div>
                     </div>

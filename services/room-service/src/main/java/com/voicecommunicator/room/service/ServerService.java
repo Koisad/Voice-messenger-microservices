@@ -1,6 +1,7 @@
 package com.voicecommunicator.room.service;
 
 import com.voicecommunicator.room.dto.MemberDTO;
+import com.voicecommunicator.room.exception.ChannelNotFoundException;
 import com.voicecommunicator.room.exception.MemberNotFoundException;
 import com.voicecommunicator.room.exception.ServerNotFoundException;
 import com.voicecommunicator.room.exception.ServerOwnerException;
@@ -101,6 +102,64 @@ public class ServerService {
                         .role(member.getRole())
                         .build())
                 .toList();
+    }
+
+    @Transactional
+    public Channel addChannel(String serverId, String channelName, ChannelType type, String userId) {
+        Server server = serverRepository.findById(serverId)
+                .orElseThrow(() -> new ServerNotFoundException(serverId));
+
+        if(!server.getOwnerId().equals(userId)) {
+            throw new SecurityException("Only the server owner can add channels");
+        }
+
+        Channel channel = new Channel(UUID.randomUUID().toString(), channelName, type);
+        server.getChannels().add(channel);
+        serverRepository.save(server);
+
+        memberNotificationService.notifyChannelAdded(serverId, channel);
+
+        return channel;
+    }
+
+    @Transactional
+    public void removeChannel(String serverId, String channelId, String userId) {
+        Server server = serverRepository.findById(serverId)
+                .orElseThrow(() -> new ServerNotFoundException(serverId));
+
+        if(!server.getOwnerId().equals(userId)) {
+            throw new SecurityException("Only the server owner can remove channels");
+        }
+
+        boolean removed = server.getChannels().removeIf(channel -> channel.getId().equals(channelId));
+
+        if(!removed) {
+            throw new ChannelNotFoundException(channelId);
+        }
+
+        serverRepository.save(server);
+
+        memberNotificationService.notifyChannelRemoved(serverId, channelId);
+    }
+
+    @Transactional
+    public void removeMember(String serverId, String userIdToRemove, String requesterId) {
+        Server server = serverRepository.findById(serverId)
+                .orElseThrow(() -> new ServerNotFoundException(serverId));
+
+        if(!server.getOwnerId().equals(requesterId)) {
+            throw new SecurityException("Only the server owner can remove members");
+        }
+
+        if (userIdToRemove.equals(requesterId)) {
+            throw new IllegalArgumentException("You cannot remove yourself");
+        }
+
+        Member memberToRemove = memberRepository.findByServerIdAndUserId(serverId, userIdToRemove)
+                .orElseThrow(() -> new MemberNotFoundException(userIdToRemove));
+
+        memberRepository.delete(memberToRemove);
+        memberNotificationService.notifyMemberLeft(serverId, userIdToRemove, memberToRemove.getUsername());
     }
 
 }

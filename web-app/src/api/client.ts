@@ -149,5 +149,33 @@ export const api = {
         });
         if (!res.ok) throw new Error('Failed to get DM channel');
         return res.json();
+    },
+
+    // Channel Management
+    addChannel: async (serverId: string, channelName: string, type: 'TEXT' | 'VOICE'): Promise<any> => {
+        const res = await fetch(`${BASE_URL}/servers/${serverId}/channels`, {
+            method: 'POST',
+            headers: getHeaders(),
+            body: JSON.stringify({ channelName, type })
+        });
+        if (!res.ok) throw new Error('Failed to add channel');
+        return res.json();
+    },
+
+    removeChannel: async (serverId: string, channelId: string): Promise<void> => {
+        const res = await fetch(`${BASE_URL}/servers/${serverId}/channels/${channelId}`, {
+            method: 'DELETE',
+            headers: getHeaders()
+        });
+        if (!res.ok) throw new Error('Failed to remove channel');
+    },
+
+    // Member Management
+    removeMember: async (serverId: string, userId: string): Promise<void> => {
+        const res = await fetch(`${BASE_URL}/servers/${serverId}/members/${userId}`, {
+            method: 'DELETE',
+            headers: getHeaders()
+        });
+        if (!res.ok) throw new Error('Failed to remove member');
     }
 };

@@ -501,6 +501,209 @@ label {
     margin-top: 4px;
 }
 
+/* CHANNEL MANAGEMENT */
+.server-header-actions {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+}
+
+.icon-btn {
+    cursor: pointer;
+    display: flex;
+    color: var(--text-muted);
+    transition: color 0.15s;
+}
+
+.icon-btn:hover {
+    color: var(--text-primary);
+}
+
+.icon-btn-danger:hover {
+    color: var(--danger);
+}
+
+.channel-section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 12px 4px;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.channel-add-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 2px;
+    border-radius: 4px;
+    transition: 0.15s;
+}
+
+.channel-add-btn:hover {
+    color: var(--text-primary);
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.channel-add-form {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 8px 12px;
+    margin-bottom: 4px;
+}
+
+.channel-add-input {
+    width: 100%;
+    padding: 8px 10px;
+    background: #1e1f22;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 4px;
+    color: var(--text-primary);
+    font-size: 13px;
+    outline: none;
+    box-sizing: border-box;
+}
+
+.channel-add-input:focus {
+    border-color: #5865F2;
+}
+
+.channel-add-type {
+    display: flex;
+    gap: 6px;
+}
+
+.type-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 6px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 4px;
+    color: var(--text-muted);
+    font-size: 12px;
+    cursor: pointer;
+    transition: 0.15s;
+}
+
+.type-btn.active {
+    background: rgba(88, 101, 242, 0.2);
+    border-color: #5865F2;
+    color: var(--text-primary);
+}
+
+.type-btn:hover:not(.active) {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.channel-add-submit {
+    padding: 6px;
+    font-size: 13px;
+}
+
+.channel-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.channel-item-name {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.channel-delete-btn {
+    display: none;
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 4px;
+    transition: 0.15s;
+    flex-shrink: 0;
+}
+
+.channel-item:hover .channel-delete-btn {
+    display: flex;
+}
+
+.channel-delete-btn:hover {
+    color: var(--danger);
+    background: rgba(237, 66, 69, 0.12);
+}
+
+/* MEMBER SIDEBAR ENHANCEMENTS */
+.member-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.member-info {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-width: 0;
+}
+
+.member-name {
+    font-size: 14px;
+    color: var(--text-primary);
+}
+
+.member-role-badge {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.role-owner {
+    color: #f0a030;
+}
+
+.role-member {
+    color: var(--text-muted);
+}
+
+.member-kick-btn {
+    display: none;
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 4px;
+    transition: 0.15s;
+    flex-shrink: 0;
+}
+
+.member-item:hover .member-kick-btn {
+    display: flex;
+}
+
+.member-kick-btn:hover {
+    color: var(--danger);
+    background: rgba(237, 66, 69, 0.12);
+}
+
 /* LOGOUT CONFIRMATION MODAL */
 .logout-modal {
     background: var(--bg-primary);

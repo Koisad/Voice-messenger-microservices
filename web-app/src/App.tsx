@@ -14,6 +14,8 @@ import { Friends } from './components/Friends';
 import { DirectMessages } from './components/DirectMessages';
 import { VoiceCallModal } from './components/VoiceCallModal';
 import { LoginPage } from './components/LoginPage';
+import { ToastContainer } from './components/ToastContainer';
+import { useToast } from './hooks/useToast';
 
 export default function App() {
     const auth = useAuth();
@@ -22,6 +24,7 @@ export default function App() {
     const [servers, setServers] = useState<Server[]>([]);
     const [messages, setMessages] = useState<Message[]>([]);
     const [members, setMembers] = useState<MemberDTO[]>([]);
+    const { toasts, showToast, removeToast } = useToast();
 
     // --- STAN UI ---
     type ViewMode = 'servers' | 'friends' | 'dms';
@@ -252,15 +255,17 @@ export default function App() {
                 const newServer = await api.createServer(inputVal);
                 setServers([...servers, newServer]);
                 setSelectedServerId(newServer.id);
-                selectDefaultChannels(newServer); // Ustaw domyślne kanały dla nowego serwera
+                selectDefaultChannels(newServer);
+                showToast('Serwer został utworzony', 'success');
             } else {
                 await api.joinServer(inputVal);
                 await loadServers();
+                showToast('Dołączono do serwera', 'success');
             }
             setShowModal(false);
-            setInputVal("");
+            setInputVal('');
         } catch (err) {
-            alert("Operacja nieudana. Sprawdź ID lub spróbuj ponownie.");
+            showToast('Operacja nieudana. Sprawdź ID lub spróbuj ponownie.', 'error');
         }
     };
 
@@ -287,7 +292,7 @@ export default function App() {
     const copyInvite = () => {
         if (selectedServerId) {
             navigator.clipboard.writeText(selectedServerId);
-            alert("Skopiowano ID serwera! Wyślij je znajomemu, aby dołączył.");
+            showToast('Skopiowano ID serwera! Wyślij je znajomemu, aby dołączył.', 'success');
         }
     };
 
@@ -317,8 +322,10 @@ export default function App() {
             setServers(updatedServers);
             setNewChannelName('');
             setShowAddChannel(false);
+            showToast('Kanał został dodany', 'success');
         } catch (err) {
             console.error('Failed to add channel:', err);
+            showToast('Nie udało się dodać kanału', 'error');
         }
     };
 
@@ -333,9 +340,11 @@ export default function App() {
                 if (updated) selectDefaultChannels(updated);
             }
             setChannelToDelete(null);
+            showToast('Kanał został usunięty', 'success');
         } catch (err) {
             console.error('Failed to remove channel:', err);
             setChannelToDelete(null);
+            showToast('Nie udało się usunąć kanału', 'error');
         }
     };
 
@@ -348,9 +357,11 @@ export default function App() {
             setSelectedChannelId(null);
             setChatChannelId(null);
             setShowLeaveConfirm(false);
+            showToast('Opuszczono serwer', 'info');
         } catch (err) {
             console.error('Failed to leave server:', err);
             setShowLeaveConfirm(false);
+            showToast('Nie udało się opuścić serwera', 'error');
         }
     };
 
@@ -359,10 +370,12 @@ export default function App() {
         try {
             await api.removeMember(selectedServerId, kickTarget.userId);
             setMembers(prev => prev.filter(m => m.userId !== kickTarget.userId));
+            showToast(`Wyrzucono ${kickTarget.username} z serwera`, 'success');
             setKickTarget(null);
         } catch (err) {
             console.error('Failed to kick member:', err);
             setKickTarget(null);
+            showToast('Nie udało się wyrzucić użytkownika', 'error');
         }
     };
 
@@ -840,6 +853,7 @@ export default function App() {
                     </div>
                 </div>
             )}
+            <ToastContainer toasts={toasts} onRemove={removeToast} />
 
         </div>
     );

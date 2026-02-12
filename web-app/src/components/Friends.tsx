@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { api } from '../api/client';
 import type { Friendship, FriendUser } from '../types';
 import { UserPlus, UserCheck, UserX, MessageSquare, Trash2, Search, Loader, Phone } from 'lucide-react';
+import { useToast } from '../hooks/useToast';
 import './Friends.css';
 
 interface FriendsProps {
@@ -20,6 +21,12 @@ export const Friends: React.FC<FriendsProps> = ({ currentUserId, onStartDM, onSt
     const [searchResults, setSearchResults] = useState<FriendUser[]>([]);
     const [loading, setLoading] = useState(false);
     const [searchLoading, setSearchLoading] = useState(false);
+
+    // Toast
+    const { showToast } = useToast();
+
+    // Confirm Modal State
+    const [friendToRemove, setFriendToRemove] = useState<{ friendship: Friendship, name: string } | null>(null);
 
     useEffect(() => {
         loadFriends();
@@ -81,11 +88,11 @@ export const Friends: React.FC<FriendsProps> = ({ currentUserId, onStartDM, onSt
         setLoading(true);
         try {
             await api.sendFriendRequest(user.userId, user.username);
-            alert(`Wysłano zaproszenie do ${user.username}`);
+            showToast(`Wysłano zaproszenie do ${user.username}`, 'success');
             setSearchQuery('');
             setSearchResults([]);
         } catch (err) {
-            alert('Nie udało się wysłać zaproszenia');
+            showToast('Nie udało się wysłać zaproszenia', 'error');
         } finally {
             setLoading(false);
         }
@@ -97,8 +104,9 @@ export const Friends: React.FC<FriendsProps> = ({ currentUserId, onStartDM, onSt
             await api.acceptFriendRequest(request.id);
             await loadFriends();
             await loadRequests();
+            showToast('Zaproszenie zaakceptowane', 'success');
         } catch (err) {
-            alert('Nie udało się zaakceptować zaproszenia');
+            showToast('Nie udało się zaakceptować zaproszenia', 'error');
         } finally {
             setLoading(false);
         }
@@ -111,32 +119,40 @@ export const Friends: React.FC<FriendsProps> = ({ currentUserId, onStartDM, onSt
             // so we need to remove the friendship using the requesterId
             await api.removeFriend(request.requesterId);
             await loadRequests();
+            showToast('Zaproszenie odrzucone', 'info');
         } catch (err) {
-            alert('Nie udało się odrzucić zaproszenia');
+            showToast('Nie udało się odrzucić zaproszenia', 'error');
         } finally {
             setLoading(false);
         }
     };
 
-    const handleRemoveFriend = async (friendship: Friendship) => {
+    const confirmRemoveFriend = async () => {
+        if (!friendToRemove) return;
+
+        const friendship = friendToRemove.friendship;
         const friendId = friendship.requesterId === currentUserId
             ? friendship.addresseeId
             : friendship.requesterId;
-        const friendName = friendship.requesterId === currentUserId
-            ? friendship.addresseeUsername
-            : friendship.requesterUsername;
-
-        if (!confirm(`Czy na pewno usunąć ${friendName} z listy znajomych ? `)) return;
 
         setLoading(true);
         try {
             await api.removeFriend(friendId);
             await loadFriends();
+            showToast(`Usunięto ${friendToRemove.name} z listy znajomych`, 'success');
         } catch (err) {
-            alert('Nie udało się usunąć znajomego');
+            showToast('Nie udało się usunąć znajomego', 'error');
         } finally {
             setLoading(false);
+            setFriendToRemove(null);
         }
+    };
+
+    const onRemoveClick = (friendship: Friendship) => {
+        const friendName = friendship.requesterId === currentUserId
+            ? friendship.addresseeUsername
+            : friendship.requesterUsername;
+        setFriendToRemove({ friendship, name: friendName });
     };
 
     const getFriendInfo = (friendship: Friendship) => {
@@ -235,7 +251,7 @@ export const Friends: React.FC<FriendsProps> = ({ currentUserId, onStartDM, onSt
                                         </button>
                                         <button
                                             className="btn-icon danger"
-                                            onClick={() => handleRemoveFriend(friendship)}
+                                            onClick={() => onRemoveClick(friendship)}
                                             title="Usuń znajomego"
                                         >
                                             <Trash2 size={18} />
@@ -281,6 +297,33 @@ export const Friends: React.FC<FriendsProps> = ({ currentUserId, onStartDM, onSt
                     )
                 )}
             </div>
+
+            {/* Remove Friend Confirmation Modal */}
+            {friendToRemove && (
+                <div className="modal-overlay" onClick={() => setFriendToRemove(null)}>
+                    <div className="modal-content" onClick={e => e.stopPropagation()}>
+                        <h3 style={{ marginTop: 0 }}>Usuń znajomego</h3>
+                        <p>Czy na pewno chcesz usunąć <strong>{friendToRemove.name}</strong> z listy znajomych?</p>
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '24px' }}>
+                            <button
+                                className="btn"
+                                style={{ background: 'transparent', color: 'var(--text-primary)' }}
+                                onClick={() => setFriendToRemove(null)}
+                            >
+                                Anuluj
+                            </button>
+                            <button
+                                className="btn"
+                                style={{ backgroundColor: 'var(--danger)' }}
+                                onClick={confirmRemoveFriend}
+                                disabled={loading}
+                            >
+                                {loading ? 'Usuwanie...' : 'Usuń'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

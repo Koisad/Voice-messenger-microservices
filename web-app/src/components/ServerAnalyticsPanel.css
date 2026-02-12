@@ -1,6 +1,8 @@
 .server-analytics-panel {
-    margin: 4px 8px 8px;
-    /* Remove border/padding from container, moving style to header/body */
+    /* Exact match for button positioning */
+    width: calc(100% - 16px);
+    margin: 4px auto 8px;
+    /* Same margin as delete-server-btn */
     padding: 0;
     border: none;
 }
@@ -8,13 +10,17 @@
 .server-analytics-header {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: center;
+    /* Center content like button */
+    gap: 8px;
+    /* Match button gap */
     padding: 8px 12px;
+    /* Match button padding */
     cursor: pointer;
     user-select: none;
     transition: all 0.15s;
 
-    /* Button-like style matching leave-server-btn structure */
+    /* Button-like style matching leave/delete buttons */
     background: transparent;
     border: 1px solid rgba(255, 255, 255, 0.08);
     /* Neutral border */
@@ -22,35 +28,33 @@
     color: #949ba4;
     font-size: 13px;
     font-weight: 500;
+    /* Regular weight, not bold */
 }
 
 .server-analytics-header:hover {
     background: rgba(255, 255, 255, 0.04);
-    border-color: #5865F2;
-    /* Specific hover color */
+    border-color: #dcddde;
     color: #dcddde;
 }
 
 .server-analytics-header h4 {
     margin: 0;
     font-size: 13px;
-    /* Match button font size */
     font-weight: 500;
     text-transform: none;
-    /* Remove uppercase to match buttons */
     letter-spacing: normal;
     color: inherit;
-    /* Inherit from header */
     display: flex;
     align-items: center;
     gap: 8px;
-    /* Slightly larger gap */
 }
 
 .server-analytics-chevron {
     transition: transform 0.2s ease;
     color: inherit;
     opacity: 0.7;
+    margin-left: 4px;
+    /* Small offset */
 }
 
 .server-analytics-chevron.open {
@@ -61,9 +65,8 @@
     overflow: hidden;
     animation: slideDown 0.2s ease;
     margin-top: 4px;
-    /* Space between button and content */
-    padding: 0 4px;
-    /* Indent slightly */
+    padding: 0;
+    /* Align with container */
 }
 
 @keyframes slideDown {
@@ -121,7 +124,7 @@
 .server-analytics-kpi {
     background: rgba(255, 255, 255, 0.03);
     border: 1px solid rgba(255, 255, 255, 0.05);
-    border-radius: 6px;
+    border-radius: 4px;
     padding: 6px;
     text-align: center;
     transition: background 0.15s;
@@ -141,7 +144,7 @@
 }
 
 .server-analytics-kpi .kpi-val {
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 700;
     color: #f2f3f5;
 }
@@ -165,13 +168,7 @@
     color: #ed4245;
 }
 
-.server-analytics-empty {
-    text-align: center;
-    padding: 8px 0;
-    color: #72767d;
-    font-size: 11px;
-}
-
+.server-analytics-empty,
 .server-analytics-loading {
     text-align: center;
     padding: 8px 0;

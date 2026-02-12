@@ -8,11 +8,14 @@ interface ToastContainerProps {
     onRemove: (id: number) => void;
 }
 
+import { MessageSquare } from 'lucide-react';
+
 const iconMap = {
     success: <CheckCircle size={18} />,
     error: <XCircle size={18} />,
     warning: <AlertTriangle size={18} />,
     info: <Info size={18} />,
+    message: <MessageSquare size={18} />,
 };
 
 export const ToastContainer: React.FC<ToastContainerProps> = ({ toasts, onRemove }) => {

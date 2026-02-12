@@ -59,6 +59,10 @@ export const useServerNotifications = ({
                 channelsSubRef.current.unsubscribe();
                 channelsSubRef.current = null;
             }
+            if (notificationsSubRef.current) {
+                notificationsSubRef.current.unsubscribe();
+                notificationsSubRef.current = null;
+            }
             clientRef.current.deactivate();
             clientRef.current = null;
         }
@@ -147,6 +151,21 @@ export const useServerNotifications = ({
                         console.error('[ServerNotifications] Failed to parse channel message:', error);
                     }
                 });
+
+                const notificationsTopic = `/topic/server.${serverId}.notifications`;
+                notificationsSubRef.current = client.subscribe(notificationsTopic, (msg) => {
+                    try {
+                        const notification = JSON.parse(msg.body);
+
+                        if (notification.type === 'CHANNEL_MESSAGE_NOTIFICATION') {
+                            if (onChannelMessageRef.current && notification.payload) {
+                                onChannelMessageRef.current(notification.payload);
+                            }
+                        }
+                    } catch (error) {
+                        console.error('[ServerNotifications] Failed to parse notification message:', error);
+                    }
+                });
             },
             onDisconnect: () => {
                 console.warn('[ServerNotifications] Disconnected');
@@ -173,6 +192,10 @@ export const useServerNotifications = ({
             if (channelsSubRef.current) {
                 channelsSubRef.current.unsubscribe();
                 channelsSubRef.current = null;
+            }
+            if (notificationsSubRef.current) {
+                notificationsSubRef.current.unsubscribe();
+                notificationsSubRef.current = null;
             }
             if (client) {
                 client.deactivate();

@@ -42,6 +42,7 @@ export default function App() {
     const [selectedServerId, setSelectedServerId] = useState<string | null>(null);
     const [selectedChannelId, setSelectedChannelId] = useState<string | null>(null); // Kanał "widoczny" (główny widok)
     const [chatChannelId, setChatChannelId] = useState<string | null>(null); // Kanał "czatowy" (do wyświetlania wiadomości)
+    const [activeDMChannelId, setActiveDMChannelId] = useState<string | null>(null); // Aktywny kanał DM (jeśli jesteśmy w widoku DM)
 
     const [showModal, setShowModal] = useState(false);
     const [modalMode, setModalMode] = useState<'CREATE' | 'JOIN'>('CREATE');
@@ -172,6 +173,30 @@ export default function App() {
                 setSelectedChannelId(null);
                 setChatChannelId(null);
             }
+        },
+        onChannelMessage: (data) => {
+            // Helper to get channel name (since notification payload might not include it, or we want local name)
+            // But payload has content. We assume we have the channel in 'servers'.
+            // data matches { serverId, channelId, senderId, senderUsername, content }
+
+            // 1. Ignore own messages
+            if (data.senderId === currentUserId) return;
+
+            // 2. Check if we are currently viewing this channel
+            // We are viewing if viewMode is 'servers', selectedServerId matches, AND chatChannelId matches logic.
+            // Note: chatChannelId is the TEXT channel. selectedChannelId usually syncs with it for text channels.
+            const isViewing = viewMode === 'servers' &&
+                selectedServerId === data.serverId &&
+                chatChannelId === data.channelId;
+
+            if (isViewing) return;
+
+            // 3. Find channel name for better toast
+            const server = servers.find(s => s.id === data.serverId);
+            const channel = server?.channels.find(c => c.id === data.channelId);
+            const channelName = channel?.name || data.channelId;
+
+            showToast(`#${channelName}: ${data.content}`, 'message');
         }
     });
 
@@ -199,6 +224,13 @@ export default function App() {
             // Trigger incoming call in WebRTC
             // Note: The signaling service handles the WebRTC offer separately via WebSocket
             // This notification is just to alert the user of an incoming call
+        },
+        onDMReceived: (data) => {
+            // Check if we are currently viewing this DM
+            const isViewing = viewMode === 'dms' && activeDMChannelId === data.channelId;
+            if (isViewing) return;
+
+            showToast(`${data.senderName}: ${data.content}`, 'message');
         }
     });
 
@@ -673,6 +705,7 @@ export default function App() {
                     currentUsername={auth.user?.profile.preferred_username || ''}
                     userToken={auth.user?.access_token}
                     onBack={() => setViewMode('servers')}
+                    onChannelSelect={setActiveDMChannelId}
                 />
             )}
 

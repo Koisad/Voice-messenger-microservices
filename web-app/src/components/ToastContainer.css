@@ -87,3 +87,9 @@
     background: rgba(88, 101, 242, 0.92);
     color: #fff;
 }
+
+.toast-message {
+    background: rgba(43, 45, 49, 0.95);
+    color: #dbdee1;
+    border-color: rgba(255, 255, 255, 0.08);
+}

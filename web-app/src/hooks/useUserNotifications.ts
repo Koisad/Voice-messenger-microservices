@@ -10,6 +10,7 @@ interface UseUserNotificationsProps {
     onFriendAccepted?: (data: { friendId: string; friendName: string }) => void;
     onFriendRemoved?: (data: { friendId: string }) => void;
     onIncomingCall?: (data: { callerId: string; callerName: string; roomId: string; type: string }) => void;
+    onDMReceived?: (data: { senderId: string; senderName: string; content: string; channelId: string }) => void;
 }
 
 export const useUserNotifications = ({
@@ -28,13 +29,15 @@ export const useUserNotifications = ({
     const onFriendAcceptedRef = useRef(onFriendAccepted);
     const onFriendRemovedRef = useRef(onFriendRemoved);
     const onIncomingCallRef = useRef(onIncomingCall);
+    const onDMReceivedRef = useRef(onDMReceived);
 
     useEffect(() => {
         onFriendRequestRef.current = onFriendRequest;
         onFriendAcceptedRef.current = onFriendAccepted;
         onFriendRemovedRef.current = onFriendRemoved;
         onIncomingCallRef.current = onIncomingCall;
-    }, [onFriendRequest, onFriendAccepted, onFriendRemoved, onIncomingCall]);
+        onDMReceivedRef.current = onDMReceived;
+    }, [onFriendRequest, onFriendAccepted, onFriendRemoved, onIncomingCall, onDMReceived]);
 
     useEffect(() => {
         // Cleanup previous connection
@@ -73,6 +76,16 @@ export const useUserNotifications = ({
                         console.log('[UserNotifications] Received:', notification);
 
                         switch (notification.type) {
+                            case 'DM_NOTIFICATION':
+                                if (onDMReceivedRef.current && notification.payload) {
+                                    onDMReceivedRef.current({
+                                        senderId: notification.payload.senderId,
+                                        senderName: notification.payload.senderName,
+                                        content: notification.payload.content,
+                                        channelId: notification.payload.channelId
+                                    });
+                                }
+                                break;
                             case 'FRIEND_REQUEST':
                                 if (onFriendRequestRef.current && notification.payload) {
                                     onFriendRequestRef.current({

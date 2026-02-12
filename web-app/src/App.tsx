@@ -614,9 +614,11 @@ export default function App() {
                     </div>
                 </div>
             ) : (
-                <div className="channel-sidebar placeholder">
-                    <p>Wybierz serwer</p>
-                </div>
+                !['friends', 'dms', 'analytics'].includes(viewMode) && (
+                    <div className="channel-sidebar placeholder">
+                        <p>Wybierz serwer</p>
+                    </div>
+                )
             )}
 
             {/* Conditional render based on view mode */}

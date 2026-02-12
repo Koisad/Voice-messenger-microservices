@@ -367,7 +367,7 @@ html,
 
 /* 4. MEMBERS SIDEBAR */
 .members-sidebar {
-    width: 240px;
+    width: 280px;
     background-color: var(--bg-secondary);
     padding: 16px;
     flex-shrink: 0;
@@ -752,6 +752,9 @@ label {
 .member-name {
     font-size: 14px;
     color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .member-role-badge {

@@ -96,7 +96,7 @@
 }
 
 .search-results {
-    padding: 0 20px 16px;
+    padding: 16px 20px;
     border-bottom: 1px solid #202225;
 }
 
@@ -105,7 +105,7 @@
     color: #b9bbbe;
     text-transform: uppercase;
     font-weight: 600;
-    margin: 0 0 12px 0;
+    margin: 12px 0;
 }
 
 .friend-item {

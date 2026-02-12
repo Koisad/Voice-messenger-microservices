@@ -82,9 +82,19 @@ export const ServerAnalyticsPanel: React.FC<Props> = ({ serverId, mediaServerUrl
         };
     }, [open, fetchMetrics]);
 
-    // Filter metrics to last 25 seconds (bigger buffer to avoid 0s)
-    const now = Date.now();
-    const recentMetrics = metrics.filter(m => new Date(m.timestamp).getTime() > now - 25000);
+    // Filter metrics to last 25 seconds relative to the LATEST metric we have, 
+    // NOT relative to client's Date.now() (which might be wrong).
+    const recentMetrics = (() => {
+        if (metrics.length === 0) return [];
+
+        // precise timestamp from server
+        // sort first just in case
+        const sorted = [...metrics].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+        const latestTime = new Date(sorted[0].timestamp).getTime();
+        const cutoff = latestTime - 25000;
+
+        return sorted.filter(m => new Date(m.timestamp).getTime() > cutoff);
+    })();
 
     // If no recent metrics, use all metrics (fallback) or show 0? 
     // Ideally if connected we have data. If not, 0 is fine.

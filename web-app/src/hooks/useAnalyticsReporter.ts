@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useRoomContext } from '@livekit/components-react';
 import { Client } from '@stomp/stompjs';
-import SockJS from 'sockjs-client';
+
 
 interface UseAnalyticsReporterProps {
     roomId: string | null;        // App server ID (discord-like room)
@@ -58,8 +58,9 @@ export const useAnalyticsReporter = ({ roomId, mediaServerUrl, userToken }: UseA
     useEffect(() => {
         if (!userToken || !roomId) return;
 
+        const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
         const stomp = new Client({
-            webSocketFactory: () => new SockJS(`${window.location.origin}/ws`),
+            brokerURL: `${protocol}://${window.location.host}/ws/websocket`,
             connectHeaders: {
                 Authorization: `Bearer ${userToken}`,
             },

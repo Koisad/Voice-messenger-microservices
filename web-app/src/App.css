@@ -635,6 +635,13 @@ label {
     margin-bottom: 4px;
 }
 
+.channel-list {
+    flex: 1;
+    overflow-y: auto;
+    min-height: 0;
+    /* Firefox flex fix */
+}
+
 .channel-add-input {
     width: 100%;
     padding: 8px 10px;

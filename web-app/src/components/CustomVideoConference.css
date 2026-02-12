@@ -72,9 +72,12 @@
     justify-content: center;
     border-left: 1px solid #1e1f22;
     /* Separator line */
-    width: 32px;
-    /* Fixed width for the arrow part */
+    width: 40px;
+    /* Fixed width for the arrow part, increased for better centering */
     cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .lk-button-menu-trigger:hover {

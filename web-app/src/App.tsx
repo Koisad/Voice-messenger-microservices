@@ -959,7 +959,14 @@ export default function App() {
                 remotePeer={webrtcCall.remotePeer}
                 remoteStream={webrtcCall.remoteStream}
                 localStream={webrtcCall.localStream}
-                onAnswer={webrtcCall.answerCall}
+                onAnswer={() => {
+                    if (isVoiceActive) {
+                        setIsVoiceActive(false);
+                        setLiveKitToken("");
+                        showToast("Rozłączono z kanału głosowego, aby odebrać połączenie.", "info");
+                    }
+                    webrtcCall.answerCall();
+                }}
                 onReject={webrtcCall.rejectCall}
                 onEnd={webrtcCall.endCall}
             />

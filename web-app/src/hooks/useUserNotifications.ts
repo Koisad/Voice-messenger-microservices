@@ -19,7 +19,8 @@ export const useUserNotifications = ({
     onFriendRequest,
     onFriendAccepted,
     onFriendRemoved,
-    onIncomingCall
+    onIncomingCall,
+    onDMReceived
 }: UseUserNotificationsProps) => {
     const clientRef = useRef<Client | null>(null);
     const subscriptionRef = useRef<StompSubscription | null>(null);

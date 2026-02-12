@@ -12,6 +12,7 @@ interface UseServerNotificationsProps {
     onServerDeleted?: (serverId: string) => void;
     onChannelAdded?: (channel: Channel) => void;
     onChannelRemoved?: (channelId: string) => void;
+    onChannelMessage?: (data: { serverId: string; channelId: string; senderId: string; senderUsername: string; content: string }) => void;
 }
 
 export const useServerNotifications = ({
@@ -21,12 +22,14 @@ export const useServerNotifications = ({
     onMemberLeft,
     onServerDeleted,
     onChannelAdded,
-    onChannelRemoved
+    onChannelRemoved,
+    onChannelMessage
 }: UseServerNotificationsProps) => {
     const clientRef = useRef<Client | null>(null);
     const subscriptionRef = useRef<StompSubscription | null>(null);
     const serverSubRef = useRef<StompSubscription | null>(null);
     const channelsSubRef = useRef<StompSubscription | null>(null);
+    const notificationsSubRef = useRef<StompSubscription | null>(null);
 
     // Use refs for callbacks
     const onMemberJoinedRef = useRef(onMemberJoined);
@@ -34,6 +37,7 @@ export const useServerNotifications = ({
     const onServerDeletedRef = useRef(onServerDeleted);
     const onChannelAddedRef = useRef(onChannelAdded);
     const onChannelRemovedRef = useRef(onChannelRemoved);
+    const onChannelMessageRef = useRef(onChannelMessage);
 
     useEffect(() => {
         onMemberJoinedRef.current = onMemberJoined;
@@ -41,7 +45,8 @@ export const useServerNotifications = ({
         onServerDeletedRef.current = onServerDeleted;
         onChannelAddedRef.current = onChannelAdded;
         onChannelRemovedRef.current = onChannelRemoved;
-    }, [onMemberJoined, onMemberLeft, onServerDeleted, onChannelAdded, onChannelRemoved]);
+        onChannelMessageRef.current = onChannelMessage;
+    }, [onMemberJoined, onMemberLeft, onServerDeleted, onChannelAdded, onChannelRemoved, onChannelMessage]);
 
     useEffect(() => {
         // Cleanup previous connection

@@ -44,6 +44,14 @@ export default function App() {
     const [chatChannelId, setChatChannelId] = useState<string | null>(null); // Kanał "czatowy" (do wyświetlania wiadomości)
     const [activeDMChannelId, setActiveDMChannelId] = useState<string | null>(null); // Aktywny kanał DM (jeśli jesteśmy w widoku DM)
 
+    // Ensure LiveKit disconnects when leaving servers view to free up microphone
+    useEffect(() => {
+        if (viewMode !== 'servers') {
+            setIsVoiceActive(false);
+            setLiveKitToken("");
+        }
+    }, [viewMode]);
+
     const [showModal, setShowModal] = useState(false);
     const [modalMode, setModalMode] = useState<'CREATE' | 'JOIN'>('CREATE');
     const [inputVal, setInputVal] = useState("");

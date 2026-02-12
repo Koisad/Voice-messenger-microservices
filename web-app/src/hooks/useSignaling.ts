@@ -38,71 +38,94 @@ export const useSignaling = ({
 
     useEffect(() => {
         if (!userToken || !currentUserId) return;
-        if (!userToken || !currentUserId) return;
 
-        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        const host = window.location.host;
-        const wsUrl = `${protocol}//${host}/ws/signal?access_token=${userToken}`;
+        let ws: WebSocket | null = null;
+        let reconnectTimeout: ReturnType<typeof setTimeout>;
+        let pingInterval: ReturnType<typeof setInterval>;
+        let isUnmounting = false;
 
-        const ws = new WebSocket(wsUrl);
-        wsRef.current = ws;
+        const connect = () => {
+            if (isUnmounting) return;
 
-        ws.onopen = () => {
-            console.log('[Signaling] Connected');
-            setConnected(true);
-        };
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const host = window.location.host;
+            const wsUrl = `${protocol}//${host}/ws/signal?access_token=${userToken}`;
 
-        ws.onclose = () => {
-            console.log('[Signaling] Disconnected');
-            setConnected(false);
-        };
+            ws = new WebSocket(wsUrl);
+            wsRef.current = ws;
 
-        ws.onerror = (error) => {
-            console.error('[Signaling] Error:', error);
-        };
+            ws.onopen = () => {
+                console.log('[Signaling] Connected');
+                setConnected(true);
+                // Keep-alive ping every 30s to prevent idle closure
+                pingInterval = setInterval(() => {
+                    if (ws?.readyState === WebSocket.OPEN) {
+                        ws.send(JSON.stringify({ type: 'ping' }));
+                    }
+                }, 30000);
+            };
 
-        ws.onmessage = (event) => {
-            try {
-                const message: SignalMessage = JSON.parse(event.data);
-                console.log('[Signaling] Received:', message.type);
-
-                switch (message.type) {
-                    case 'offer':
-                        console.log('[Signaling] Processing offer from:', message.sender, 'Username:', message.senderUsername);
-                        if (onIncomingCallRef.current && message.data) {
-                            console.log('[Signaling] Calling onIncomingCall callback');
-                            onIncomingCallRef.current(message.sender, message.senderUsername || message.sender, message.data);
-                        } else {
-                            console.warn('[Signaling] onIncomingCall callback not defined or no message data');
-                        }
-                        break;
-                    case 'answer':
-                        if (onCallAnsweredRef.current && message.data) {
-                            onCallAnsweredRef.current(message.data);
-                        }
-                        break;
-                    case 'ice-candidate':
-                        if (onIceCandidateRef.current && message.data) {
-                            onIceCandidateRef.current(message.data);
-                        }
-                        break;
-                    case 'call-ended':
-                        if (onCallEndedRef.current) {
-                            onCallEndedRef.current();
-                        }
-                        break;
+            ws.onclose = () => {
+                console.log('[Signaling] Disconnected, reconnecting in 3s...');
+                setConnected(false);
+                if (pingInterval) clearInterval(pingInterval);
+                if (!isUnmounting) {
+                    reconnectTimeout = setTimeout(connect, 3000);
                 }
-            } catch (err) {
-                console.error('[Signaling] Parse error:', err);
-            }
+            };
+
+            ws.onerror = (error) => {
+                console.error('[Signaling] Error:', error);
+                ws?.close(); // Trigger onclose to reconnect
+            };
+
+            ws.onmessage = (event) => {
+                try {
+                    const message: SignalMessage = JSON.parse(event.data);
+                    if (message.type === 'pong') return; // Ignore pongs
+                    console.log('[Signaling] Received:', message.type);
+
+                    switch (message.type) {
+                        case 'offer':
+                            console.log('[Signaling] Processing offer from:', message.sender, 'Username:', message.senderUsername);
+                            if (onIncomingCallRef.current && message.data) {
+                                console.log('[Signaling] Calling onIncomingCall callback');
+                                onIncomingCallRef.current(message.sender, message.senderUsername || message.sender, message.data);
+                            } else {
+                                console.warn('[Signaling] onIncomingCall callback not defined or no message data');
+                            }
+                            break;
+                        case 'answer':
+                            if (onCallAnsweredRef.current && message.data) {
+                                onCallAnsweredRef.current(message.data);
+                            }
+                            break;
+                        case 'ice-candidate':
+                            if (onIceCandidateRef.current && message.data) {
+                                onIceCandidateRef.current(message.data);
+                            }
+                            break;
+                        case 'call-ended':
+                            if (onCallEndedRef.current) {
+                                onCallEndedRef.current();
+                            }
+                            break;
+                    }
+                } catch (err) {
+                    console.error('[Signaling] Parse error:', err);
+                }
+            };
         };
+
+        connect();
 
         return () => {
-            if (ws.readyState === WebSocket.OPEN) {
-                ws.close();
-            }
+            isUnmounting = true;
+            if (ws) ws.close();
+            if (reconnectTimeout) clearTimeout(reconnectTimeout);
+            if (pingInterval) clearInterval(pingInterval);
         };
-    }, [userToken, currentUserId]); // Removed callbacks from dependencies
+    }, [userToken, currentUserId]);
 
     const sendSignal = useCallback((message: Omit<SignalMessage, 'sender'>) => {
         if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {

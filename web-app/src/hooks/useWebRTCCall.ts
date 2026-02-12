@@ -117,11 +117,15 @@ export const useWebRTCCall = ({ userToken, currentUserId, currentUsername }: Use
             const offer = await pc.createOffer();
             await pc.setLocalDescription(offer);
 
-            sendSignal({
+            const sent = sendSignal({
                 type: 'offer',
                 target: targetUserId,
                 data: offer
             });
+
+            if (!sent) {
+                throw new Error("Błąd połączenia z serwerem sygnałowym (Signaling Disconnected)");
+            }
         } catch (err) {
             console.error('[WebRTC] Failed to start call:', err);
             endCall();

@@ -4,4 +4,4 @@ rtc:
   port_range_start: 50000
   port_range_end: 50050
   node_ip: 3.71.11.3
-  use_external_ip: true
+  use_external_ip: false

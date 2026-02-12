@@ -81,9 +81,9 @@ export const ServerAnalyticsPanel: React.FC<Props> = ({ serverId, mediaServerUrl
         };
     }, [open, fetchMetrics]);
 
-    // Filter metrics to last 15 seconds (Real-time view with buffer)
+    // Filter metrics to last 25 seconds (bigger buffer to avoid 0s)
     const now = Date.now();
-    const recentMetrics = metrics.filter(m => new Date(m.timestamp).getTime() > now - 15000);
+    const recentMetrics = metrics.filter(m => new Date(m.timestamp).getTime() > now - 25000);
 
     // If no recent metrics, use all metrics (fallback) or show 0? 
     // Ideally if connected we have data. If not, 0 is fine.
@@ -139,7 +139,7 @@ export const ServerAnalyticsPanel: React.FC<Props> = ({ serverId, mediaServerUrl
                             <div className={`server-analytics-kpi ${rttClass(avgRtt)}`}>
                                 <div className="kpi-label">RTT</div>
                                 <div className="kpi-val">
-                                    {avgRtt.toFixed(0)}
+                                    {avgRtt > 0 ? avgRtt.toFixed(0) : '—'}
                                     <span className="unit">ms</span>
                                 </div>
                             </div>

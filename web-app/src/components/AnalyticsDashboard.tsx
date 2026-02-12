@@ -105,13 +105,14 @@ export const AnalyticsDashboard: React.FC<Props> = ({ userId }) => {
 
     // MOS Calculation (Simplified E-Model)
     const calculateMOS = (rtt: number, jitter: number, loss: number): number => {
-        // R-Factor base for G.711 is ~93.2
-        let R = 93.2;
+        // 1. One-way delay to podstawa obliczeń (uproszczenie: RTT / 2)
+        // Dodajemy jitter buffer (zwykle 2x jitter)
+        const effectiveLatency = (rtt / 2) + (jitter * 2) + 10; // +10ms na procesing
 
-        // Effective Latency: RTT + Jitter buffer (2 * jitter)
-        const effectiveLatency = rtt + (jitter * 2);
+        // 2. Base R-Factor dla kodeka G.711 (najlepsza możliwa jakość)
+        let R = 94.2;
 
-        // Delay Impairment (Id)
+        // 3. Delay Impairment (Id) - wpływ opóźnienia
         let Id = 0;
         if (effectiveLatency < 160) {
             Id = effectiveLatency / 40;
@@ -119,31 +120,25 @@ export const AnalyticsDashboard: React.FC<Props> = ({ userId }) => {
             Id = (effectiveLatency - 120) / 10;
         }
 
-        // Equipment Impairment (Ie) due to packet loss
-        // standard approximation for packet loss impact
-        const Ie = 30 * Math.log(1 + 15 * loss);
+        // 4. Equipment Impairment (Ie) - wpływ utraty pakietów
+        // loss musi być ułamkiem (np. 0.01 dla 1%)
+        // Jeśli Twoje DTO wysyła procenty (1-100), użyj: (loss / 100)
+        const lossProbability = loss > 1 ? loss / 100 : loss;
+        const Ie = 30 * Math.log(1 + 15 * lossProbability);
 
-        // Calculate R
+        // 5. Finalny R-Factor
         R = R - Id - Ie;
 
-        // Clamp R
-        if (R < 0) R = 0;
-        if (R > 100) R = 100;
+        // Clamp R-Factor do zakresu 0-100
+        R = Math.max(0, Math.min(100, R));
 
-        // Convert R to MOS
-        let mos = 1;
-        if (R > 80) {
-            mos = R / 23.4 + 0.7; // Linear Approx for high quality
-            if (mos > 4.5) mos = 4.5; // Max MOS is usually 4.5 (or 5 theoretical)
-        } else if (R > 6.5) {
-            mos = 1 + (0.035) * R + (R * (R - 60) * (100 - R) * 7e-6);
-        }
+        // 6. Konwersja R-Factor na MOS (Standard ITU-T G.107)
+        // To jest oficjalna krzywa mapowania
+        let mos = 1 + (0.035 * R) + (R * (R - 60) * (100 - R) * 0.000007);
 
-        // Clamp MOS 1-5
-        if (mos < 1) mos = 1;
-        if (mos > 5) mos = 5;
-
-        return mos;
+        // Clamp MOS do zakresu 1.0 - 4.5
+        // (Wartość 4.5 jest max dla G.711 ze względu na kompresję cyfrową)
+        return parseFloat(Math.max(1, Math.min(4.5, mos)).toFixed(2));
     };
 
     const mosScore = calculateMOS(avgRtt, avgJitter, avgLoss);
@@ -228,13 +223,13 @@ export const AnalyticsDashboard: React.FC<Props> = ({ userId }) => {
                                     <YAxis tick={axisStyle} axisLine={false} tickLine={false} unit=" ms" width={60} />
                                     <Tooltip content={<CustomTooltip />} />
                                     <Line
-                                        type="monotone"
+                                        type="linear"
                                         dataKey="rtt"
                                         name="RTT"
                                         stroke="#5b8def"
                                         strokeWidth={2}
-                                        dot={false}
-                                        activeDot={{ r: 4, fill: '#5b8def', stroke: '#1e1f22', strokeWidth: 2 }}
+                                        dot={{ r: 3, fill: '#5b8def', strokeWidth: 0 }}
+                                        activeDot={{ r: 5, fill: '#5b8def', stroke: '#1e1f22', strokeWidth: 2 }}
                                     />
                                 </LineChart>
                             </ResponsiveContainer>
@@ -258,8 +253,8 @@ export const AnalyticsDashboard: React.FC<Props> = ({ userId }) => {
                                         name="Jitter"
                                         stroke="#f0a030"
                                         strokeWidth={2}
-                                        dot={false}
-                                        activeDot={{ r: 4, fill: '#f0a030', stroke: '#1e1f22', strokeWidth: 2 }}
+                                        dot={{ r: 3, fill: '#f0a030', strokeWidth: 0 }}
+                                        activeDot={{ r: 5, fill: '#f0a030', stroke: '#1e1f22', strokeWidth: 2 }}
                                     />
                                 </LineChart>
                             </ResponsiveContainer>
@@ -290,8 +285,8 @@ export const AnalyticsDashboard: React.FC<Props> = ({ userId }) => {
                                         stroke="#ed4245"
                                         strokeWidth={2}
                                         fill="url(#lossGradient)"
-                                        dot={false}
-                                        activeDot={{ r: 4, fill: '#ed4245', stroke: '#1e1f22', strokeWidth: 2 }}
+                                        dot={{ r: 3, fill: '#ed4245', strokeWidth: 0 }}
+                                        activeDot={{ r: 5, fill: '#ed4245', stroke: '#1e1f22', strokeWidth: 2 }}
                                     />
                                 </AreaChart>
                             </ResponsiveContainer>

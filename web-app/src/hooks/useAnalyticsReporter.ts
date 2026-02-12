@@ -122,7 +122,7 @@ export const useAnalyticsReporter = ({ roomId, mediaServerUrl, userToken }: UseA
                         }
 
                         if (report.type === 'inbound-rtp') {
-                            if (typeof report.jitter === 'number' && report.jitter > 0) {
+                            if (typeof report.jitter === 'number') {
                                 jitterSum += report.jitter * 1000;
                                 jitterCount++;
                             }
@@ -135,7 +135,7 @@ export const useAnalyticsReporter = ({ roomId, mediaServerUrl, userToken }: UseA
                         }
 
                         if (report.type === 'remote-inbound-rtp') {
-                            if (typeof report.jitter === 'number' && report.jitter > 0) {
+                            if (typeof report.jitter === 'number') {
                                 jitterSum += report.jitter * 1000;
                                 jitterCount++;
                             }

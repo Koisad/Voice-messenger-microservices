@@ -579,6 +579,11 @@ export default function App() {
                         ))}
                     </div>
 
+                    <ServerAnalyticsPanel
+                        serverId={selectedServerId}
+                        mediaServerUrl={liveKitUrl}
+                    />
+
                     {!isServerOwner && (
                         <button className="leave-server-btn" onClick={() => setShowLeaveConfirm(true)}>
                             <DoorOpen size={16} /> Opuść serwer
@@ -591,10 +596,7 @@ export default function App() {
                         </button>
                     )}
 
-                    <ServerAnalyticsPanel
-                        serverId={selectedServerId}
-                        mediaServerUrl={liveKitUrl}
-                    />
+
 
                     <div className="user-bar">
                         <div className="user-avatar-container">

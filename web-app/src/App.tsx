@@ -481,7 +481,7 @@ export default function App() {
                 </div>
 
                 <div
-                    className={`server-icon ${viewMode === 'analytics' ? 'active' : ''}`}
+                    className={`server-icon analytics-icon ${viewMode === 'analytics' ? 'active' : ''}`}
                     onClick={() => setViewMode('analytics')}
                     title="Analityka Sieci"
                 >

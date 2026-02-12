@@ -76,9 +76,13 @@ html,
 }
 
 .logout-icon {
-    margin-top: auto;
+    margin-top: 4px;
     margin-bottom: 12px;
     background: transparent;
+}
+
+.analytics-icon {
+    margin-top: auto;
 }
 
 .logout-icon:hover {

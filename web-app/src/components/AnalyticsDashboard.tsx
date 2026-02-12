@@ -89,9 +89,9 @@ export const AnalyticsDashboard: React.FC<Props> = ({ userId }) => {
         .map(m => ({
             time: formatTime(m.timestamp),
             rtt: m.rtt && m.rtt > 0 ? m.rtt : null,
-            packetLossRatio: m.packetLossRatio && m.packetLossRatio > 0 ? m.packetLossRatio : null,
-            jitter: m.jitter && m.jitter > 0 ? m.jitter : null,
-            packetsLost: m.packetsLost && Number(m.packetsLost) > 0 ? Number(m.packetsLost) : null
+            packetLossRatio: m.packetLossRatio !== null ? m.packetLossRatio : null,
+            jitter: m.jitter !== null ? m.jitter : null,
+            packetsLost: m.packetsLost !== null ? Number(m.packetsLost) : null
         }));
 
     // KPI calculations
@@ -106,8 +106,7 @@ export const AnalyticsDashboard: React.FC<Props> = ({ userId }) => {
     return (
         <div className="analytics-dashboard">
             <div className="analytics-header">
-                <h2><BarChart3 size={22} /> Moje Metryki Sieci</h2>
-                <p>Twoja jakość połączenia z ostatniej godziny • Odświeżanie co 30s</p>
+                <h2><BarChart3 size={22} /> Metryki sieci użytkownika</h2>
             </div>
 
             {loading && metrics.length === 0 ? (

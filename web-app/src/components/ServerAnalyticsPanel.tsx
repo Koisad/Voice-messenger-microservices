@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { api } from '../api/client';
 import type { NetworkMetric } from '../types';
-import { BarChart3, Wifi, Server, ChevronDown } from 'lucide-react';
+import { BarChart3, Wifi, Server, ChevronDown, Info } from 'lucide-react';
 import './ServerAnalyticsPanel.css';
 
 interface Props {
@@ -44,7 +44,22 @@ export const ServerAnalyticsPanel: React.FC<Props> = ({ serverId, mediaServerUrl
     const [tab, setTab] = useState<PanelTab>('room');
     const [metrics, setMetrics] = useState<NetworkMetric[]>([]);
     const [loading, setLoading] = useState(false);
+    const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
+    const [hoveredTab, setHoveredTab] = useState<string | null>(null);
     const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+    const handleMouseMove = (e: React.MouseEvent) => {
+        const tooltipWidth = 340;
+        const offset = 15;
+        const windowWidth = window.innerWidth;
+
+        let x = e.clientX + offset;
+        if (x + tooltipWidth > windowWidth) {
+            x = e.clientX - tooltipWidth - offset;
+        }
+
+        setTooltipPos({ x, y: e.clientY });
+    };
 
     const fetchMetrics = useCallback(async () => {
         try {
@@ -114,8 +129,13 @@ export const ServerAnalyticsPanel: React.FC<Props> = ({ serverId, mediaServerUrl
     const avgLoss = avg(metricsToDisplay.map(m => m.packetLossRatio));
     const avgJitter = avg(metricsToDisplay.map(m => m.jitter));
 
+    const tabTooltips: Record<string, string> = {
+        'room': 'Statystyki twojego połączenia z serwerem głosowym',
+        'media': 'Średnie parametry sieciowe wszystkich użytkowników podłączonych do twojego serwera głosowego'
+    };
+
     return (
-        <div className="server-analytics-panel">
+        <div className="server-analytics-panel" onMouseMove={handleMouseMove}>
             <div className="server-analytics-header" onClick={() => setOpen(!open)}>
                 <h4>
                     <BarChart3 size={12} />
@@ -130,16 +150,33 @@ export const ServerAnalyticsPanel: React.FC<Props> = ({ serverId, mediaServerUrl
                         <button
                             className={`server-analytics-tab ${tab === 'room' ? 'active' : ''}`}
                             onClick={() => setTab('room')}
+                            onMouseEnter={() => setHoveredTab('room')}
+                            onMouseLeave={() => setHoveredTab(null)}
                         >
-                            <Wifi size={10} /> Pokój
+                            <Wifi size={10} /> Użytkownik <Info size={10} className="info-icon" />
                         </button>
                         <button
                             className={`server-analytics-tab ${tab === 'media' ? 'active' : ''}`}
                             onClick={() => setTab('media')}
+                            onMouseEnter={() => setHoveredTab('media')}
+                            onMouseLeave={() => setHoveredTab(null)}
                         >
-                            <Server size={10} /> Media
+                            <Server size={10} /> Serwer <Info size={10} className="info-icon" />
                         </button>
                     </div>
+
+                    {hoveredTab && tabTooltips[hoveredTab] && (
+                        <div
+                            className="kpi-tooltip-overlay"
+                            style={{
+                                top: tooltipPos.y + 12, // Slight offset to avoid cursor overlap
+                                left: tooltipPos.x,
+                                zIndex: 9999
+                            }}
+                        >
+                            {tabTooltips[hoveredTab]}
+                        </div>
+                    )}
 
                     {loading && metrics.length === 0 ? (
                         <div className="server-analytics-loading">

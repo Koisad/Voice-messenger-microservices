@@ -6,16 +6,12 @@ import {
     XAxis, YAxis, CartesianGrid, Tooltip,
     ResponsiveContainer
 } from 'recharts';
-import { BarChart3, Activity, Wifi, Server } from 'lucide-react';
+import { BarChart3 } from 'lucide-react';
 import './AnalyticsDashboard.css';
 
 interface Props {
-    serverId: string | null;      // App room ID
     userId: string;
-    mediaServerUrl: string;       // LiveKit server URL
 }
-
-type TabMode = 'room' | 'user' | 'media';
 
 interface ChartDataPoint {
     time: string;
@@ -64,33 +60,22 @@ const CustomTooltip = ({ active, payload, label }: any) => {
     );
 };
 
-export const AnalyticsDashboard: React.FC<Props> = ({ serverId, userId, mediaServerUrl }) => {
-    const [tab, setTab] = useState<TabMode>('room');
+export const AnalyticsDashboard: React.FC<Props> = ({ userId }) => {
     const [metrics, setMetrics] = useState<NetworkMetric[]>([]);
     const [loading, setLoading] = useState(false);
 
     const fetchMetrics = useCallback(async () => {
         setLoading(true);
         try {
-            if (tab === 'room' && serverId) {
-                const data = await api.getRoomMetrics(serverId);
-                setMetrics(data);
-            } else if (tab === 'user') {
-                const data = await api.getUserMetrics(userId);
-                setMetrics(data);
-            } else if (tab === 'media' && mediaServerUrl) {
-                const data = await api.getServerMetrics(mediaServerUrl);
-                setMetrics(data);
-            } else {
-                setMetrics([]);
-            }
+            const data = await api.getUserMetrics(userId);
+            setMetrics(data);
         } catch (err) {
             console.error('[Analytics] Failed to fetch metrics:', err);
             setMetrics([]);
         } finally {
             setLoading(false);
         }
-    }, [tab, serverId, userId, mediaServerUrl]);
+    }, [userId]);
 
     useEffect(() => {
         fetchMetrics();
@@ -103,10 +88,10 @@ export const AnalyticsDashboard: React.FC<Props> = ({ serverId, userId, mediaSer
         .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
         .map(m => ({
             time: formatTime(m.timestamp),
-            rtt: m.rtt,
-            packetLossRatio: m.packetLossRatio,
-            jitter: m.jitter,
-            packetsLost: m.packetsLost ? Number(m.packetsLost) : null
+            rtt: m.rtt && m.rtt > 0 ? m.rtt : null,
+            packetLossRatio: m.packetLossRatio && m.packetLossRatio > 0 ? m.packetLossRatio : null,
+            jitter: m.jitter && m.jitter > 0 ? m.jitter : null,
+            packetsLost: m.packetsLost && Number(m.packetsLost) > 0 ? Number(m.packetsLost) : null
         }));
 
     // KPI calculations
@@ -121,35 +106,11 @@ export const AnalyticsDashboard: React.FC<Props> = ({ serverId, userId, mediaSer
     return (
         <div className="analytics-dashboard">
             <div className="analytics-header">
-                <h2><BarChart3 size={22} /> Analityka Sieci</h2>
-                <p>Metryki jakości połączenia z ostatniej godziny • Odświeżanie co 30s</p>
+                <h2><BarChart3 size={22} /> Moje Metryki Sieci</h2>
+                <p>Twoja jakość połączenia z ostatniej godziny • Odświeżanie co 30s</p>
             </div>
 
-            <div className="analytics-tabs">
-                <button
-                    className={`analytics-tab ${tab === 'room' ? 'active' : ''}`}
-                    onClick={() => setTab('room')}
-                >
-                    <Wifi size={14} style={{ marginRight: 6, verticalAlign: 'middle' }} />
-                    Pokój
-                </button>
-                <button
-                    className={`analytics-tab ${tab === 'user' ? 'active' : ''}`}
-                    onClick={() => setTab('user')}
-                >
-                    <Activity size={14} style={{ marginRight: 6, verticalAlign: 'middle' }} />
-                    Moje Metryki
-                </button>
-                <button
-                    className={`analytics-tab ${tab === 'media' ? 'active' : ''}`}
-                    onClick={() => setTab('media')}
-                >
-                    <Server size={14} style={{ marginRight: 6, verticalAlign: 'middle' }} />
-                    Media Serwer
-                </button>
-            </div>
-
-            {loading ? (
+            {loading && metrics.length === 0 ? (
                 <div className="analytics-loading">
                     <div className="loading-spinner" />
                 </div>
@@ -159,11 +120,7 @@ export const AnalyticsDashboard: React.FC<Props> = ({ serverId, userId, mediaSer
                         <BarChart3 size={36} />
                     </div>
                     <h3>Brak danych</h3>
-                    <p>
-                        {tab === 'room' && !serverId
-                            ? 'Wybierz pokój z listy, aby zobaczyć metryki.'
-                            : 'Nie znaleziono metryk z ostatniej godziny. Dane pojawią się po nawiązaniu połączenia głosowego.'}
-                    </p>
+                    <p>Nie znaleziono metryk z ostatniej godziny. Dane pojawią się po nawiązaniu połączenia głosowego.</p>
                 </div>
             ) : (
                 <div className="analytics-content">

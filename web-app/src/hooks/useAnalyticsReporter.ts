@@ -109,7 +109,7 @@ export const useAnalyticsReporter = ({ roomId, mediaServerUrl, userToken }: UseA
 
                     stats.forEach((report: any) => {
                         if (report.type === 'candidate-pair' && report.state === 'succeeded') {
-                            if (typeof report.currentRoundTripTime === 'number') {
+                            if (typeof report.currentRoundTripTime === 'number' && report.currentRoundTripTime > 0) {
                                 rttSum += report.currentRoundTripTime * 1000;
                                 rttCount++;
                             }
@@ -122,7 +122,7 @@ export const useAnalyticsReporter = ({ roomId, mediaServerUrl, userToken }: UseA
                         }
 
                         if (report.type === 'inbound-rtp') {
-                            if (typeof report.jitter === 'number') {
+                            if (typeof report.jitter === 'number' && report.jitter > 0) {
                                 jitterSum += report.jitter * 1000;
                                 jitterCount++;
                             }
@@ -135,14 +135,14 @@ export const useAnalyticsReporter = ({ roomId, mediaServerUrl, userToken }: UseA
                         }
 
                         if (report.type === 'remote-inbound-rtp') {
-                            if (typeof report.jitter === 'number') {
+                            if (typeof report.jitter === 'number' && report.jitter > 0) {
                                 jitterSum += report.jitter * 1000;
                                 jitterCount++;
                             }
                             if (typeof report.packetsLost === 'number') {
                                 totalPacketsLost += report.packetsLost;
                             }
-                            if (typeof report.roundTripTime === 'number') {
+                            if (typeof report.roundTripTime === 'number' && report.roundTripTime > 0) {
                                 rttSum += report.roundTripTime * 1000;
                                 rttCount++;
                             }

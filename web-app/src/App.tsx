@@ -17,6 +17,7 @@ import { LoginPage } from './components/LoginPage';
 import { ToastContainer } from './components/ToastContainer';
 import { useToast } from './hooks/useToast';
 import { AnalyticsDashboard } from './components/AnalyticsDashboard';
+import { ServerAnalyticsPanel } from './components/ServerAnalyticsPanel';
 import { useAnalyticsReporter } from './hooks/useAnalyticsReporter';
 
 // Wrapper component — must be inside <LiveKitRoom> to access Room context
@@ -633,9 +634,7 @@ export default function App() {
 
             {viewMode === 'analytics' && (
                 <AnalyticsDashboard
-                    serverId={selectedServerId}
                     userId={auth.user?.profile.sub || ''}
-                    mediaServerUrl={liveKitUrl}
                 />
             )}
 
@@ -781,6 +780,10 @@ export default function App() {
 
             {selectedServer && !isVoiceActive && viewMode === 'servers' && (
                 <aside className="members-sidebar">
+                    <ServerAnalyticsPanel
+                        serverId={selectedServerId}
+                        mediaServerUrl={liveKitUrl}
+                    />
                     <h3>CZŁONKOWIE — {members.length}</h3>
                     {members.map((m, i) => (
                         <div key={i} className="member-item">

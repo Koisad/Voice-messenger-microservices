@@ -5,7 +5,7 @@ import '@livekit/components-styles';
 import { api } from './api/client';
 import type { Server, Message, MemberDTO } from './types';
 import './App.css';
-import { Hash, Volume2, Plus, LogOut, Copy, Users, MessageCircle, AlertTriangle, Eye, EyeOff, Trash2, UserX, DoorOpen } from 'lucide-react';
+import { Hash, Volume2, Plus, LogOut, Copy, Users, MessageCircle, AlertTriangle, Eye, EyeOff, Trash2, UserX, DoorOpen, BarChart3 } from 'lucide-react';
 import { useChatSocket } from './hooks/useChatSocket';
 import { useWebRTCCall } from './hooks/useWebRTCCall';
 import { useServerNotifications } from './hooks/useServerNotifications';
@@ -16,6 +16,7 @@ import { VoiceCallModal } from './components/VoiceCallModal';
 import { LoginPage } from './components/LoginPage';
 import { ToastContainer } from './components/ToastContainer';
 import { useToast } from './hooks/useToast';
+import { AnalyticsDashboard } from './components/AnalyticsDashboard';
 
 export default function App() {
     const auth = useAuth();
@@ -27,7 +28,7 @@ export default function App() {
     const { toasts, showToast, removeToast } = useToast();
 
     // --- STAN UI ---
-    type ViewMode = 'servers' | 'friends' | 'dms';
+    type ViewMode = 'servers' | 'friends' | 'dms' | 'analytics';
     const [viewMode, setViewMode] = useState<ViewMode>('servers');
     const [selectedServerId, setSelectedServerId] = useState<string | null>(null);
     const [selectedChannelId, setSelectedChannelId] = useState<string | null>(null); // Kanał "widoczny" (główny widok)
@@ -446,6 +447,14 @@ export default function App() {
                     <MessageCircle size={24} />
                 </div>
 
+                <div
+                    className={`server-icon ${viewMode === 'analytics' ? 'active' : ''}`}
+                    onClick={() => setViewMode('analytics')}
+                    title="Analityka Sieci"
+                >
+                    <BarChart3 size={24} />
+                </div>
+
                 <div className="sidebar-separator" />
 
                 {/* Servers */}
@@ -612,6 +621,13 @@ export default function App() {
                     currentUsername={auth.user?.profile.preferred_username || ''}
                     userToken={auth.user?.access_token}
                     onBack={() => setViewMode('servers')}
+                />
+            )}
+
+            {viewMode === 'analytics' && (
+                <AnalyticsDashboard
+                    serverId={selectedServerId}
+                    userId={auth.user?.profile.sub || ''}
                 />
             )}
 

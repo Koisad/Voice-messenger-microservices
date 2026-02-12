@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { Client } from '@stomp/stompjs';
 import type { StompSubscription } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
+import type { Channel } from '../types';
 
 interface UseServerNotificationsProps {
     serverId: string | null;
@@ -9,6 +10,8 @@ interface UseServerNotificationsProps {
     onMemberJoined?: (member: { userId: string; username: string; role: string }) => void;
     onMemberLeft?: (data: { userId: string; username: string }) => void;
     onServerDeleted?: (serverId: string) => void;
+    onChannelAdded?: (channel: Channel) => void;
+    onChannelRemoved?: (channelId: string) => void;
 }
 
 export const useServerNotifications = ({
@@ -16,22 +19,29 @@ export const useServerNotifications = ({
     userToken,
     onMemberJoined,
     onMemberLeft,
-    onServerDeleted
+    onServerDeleted,
+    onChannelAdded,
+    onChannelRemoved
 }: UseServerNotificationsProps) => {
     const clientRef = useRef<Client | null>(null);
     const subscriptionRef = useRef<StompSubscription | null>(null);
     const serverSubRef = useRef<StompSubscription | null>(null);
+    const channelsSubRef = useRef<StompSubscription | null>(null);
 
     // Use refs for callbacks
     const onMemberJoinedRef = useRef(onMemberJoined);
     const onMemberLeftRef = useRef(onMemberLeft);
     const onServerDeletedRef = useRef(onServerDeleted);
+    const onChannelAddedRef = useRef(onChannelAdded);
+    const onChannelRemovedRef = useRef(onChannelRemoved);
 
     useEffect(() => {
         onMemberJoinedRef.current = onMemberJoined;
         onMemberLeftRef.current = onMemberLeft;
         onServerDeletedRef.current = onServerDeleted;
-    }, [onMemberJoined, onMemberLeft, onServerDeleted]);
+        onChannelAddedRef.current = onChannelAdded;
+        onChannelRemovedRef.current = onChannelRemoved;
+    }, [onMemberJoined, onMemberLeft, onServerDeleted, onChannelAdded, onChannelRemoved]);
 
     useEffect(() => {
         // Cleanup previous connection
@@ -44,6 +54,10 @@ export const useServerNotifications = ({
             if (serverSubRef.current) {
                 serverSubRef.current.unsubscribe();
                 serverSubRef.current = null;
+            }
+            if (channelsSubRef.current) {
+                channelsSubRef.current.unsubscribe();
+                channelsSubRef.current = null;
             }
             clientRef.current.deactivate();
             clientRef.current = null;
@@ -67,7 +81,9 @@ export const useServerNotifications = ({
             onConnect: () => {
                 const membersTopic = `/topic/server.${serverId}.members`;
                 const serverTopic = `/topic/server.${serverId}`;
-                console.log(`[ServerNotifications] Connected. Subscribing to: ${membersTopic} and ${serverTopic}`);
+                const channelsTopic = `/topic/server.${serverId}.channels`;
+
+                console.log(`[ServerNotifications] Connected. Subscribing to: ${membersTopic}, ${serverTopic}, ${channelsTopic}`);
 
                 subscriptionRef.current = client.subscribe(membersTopic, (msg) => {
                     try {
@@ -109,6 +125,28 @@ export const useServerNotifications = ({
                         console.error('[ServerNotifications] Failed to parse server message:', error);
                     }
                 });
+
+                channelsSubRef.current = client.subscribe(channelsTopic, (msg) => {
+                    try {
+                        const notification = JSON.parse(msg.body);
+                        console.log('[ServerNotifications] Received (channels):', notification);
+
+                        switch (notification.type) {
+                            case 'CHANNEL_ADDED':
+                                if (onChannelAddedRef.current && notification.payload?.channel) {
+                                    onChannelAddedRef.current(notification.payload.channel);
+                                }
+                                break;
+                            case 'CHANNEL_REMOVED':
+                                if (onChannelRemovedRef.current && notification.payload?.channelId) {
+                                    onChannelRemovedRef.current(notification.payload.channelId);
+                                }
+                                break;
+                        }
+                    } catch (error) {
+                        console.error('[ServerNotifications] Failed to parse channel message:', error);
+                    }
+                });
             },
             onDisconnect: () => {
                 console.warn('[ServerNotifications] Disconnected');
@@ -131,6 +169,10 @@ export const useServerNotifications = ({
             if (serverSubRef.current) {
                 serverSubRef.current.unsubscribe();
                 serverSubRef.current = null;
+            }
+            if (channelsSubRef.current) {
+                channelsSubRef.current.unsubscribe();
+                channelsSubRef.current = null;
             }
             if (client) {
                 client.deactivate();

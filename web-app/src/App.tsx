@@ -28,6 +28,7 @@ function AnalyticsReporterInRoom({ roomId, mediaServerUrl, userToken }: { roomId
 
 export default function App() {
     const auth = useAuth();
+    const currentUserId = auth.user?.profile.sub || '';
 
     // --- STAN DANYCH ---
     const [servers, setServers] = useState<Server[]>([]);
@@ -125,8 +126,18 @@ export default function App() {
         },
         onMemberLeft: (data) => {
             console.log('[App] Member left:', data);
-            if (selectedServerId) {
-                api.getServerMembers(selectedServerId).then(setMembers).catch(console.error);
+            if (data.userId === currentUserId) {
+                showToast('Zostałeś wyrzucony z serwera', 'info');
+                loadServers();
+                if (selectedServerId) {
+                    setSelectedServerId(null);
+                    setSelectedChannelId(null);
+                    setChatChannelId(null);
+                }
+            } else {
+                if (selectedServerId) {
+                    api.getServerMembers(selectedServerId).then(setMembers).catch(console.error);
+                }
             }
         },
         onServerDeleted: (deletedServerId) => {
@@ -137,6 +148,29 @@ export default function App() {
                 setSelectedChannelId(null);
                 setChatChannelId(null);
                 showToast('Serwer został usunięty przez właściciela', 'info');
+            }
+        },
+        onChannelAdded: (channel) => {
+            console.log('[App] Channel added:', channel);
+            setServers(prev => prev.map(s => {
+                if (s.id === selectedServerId) {
+                    if (s.channels.some(c => c.id === channel.id)) return s;
+                    return { ...s, channels: [...s.channels, channel] };
+                }
+                return s;
+            }));
+        },
+        onChannelRemoved: (channelId) => {
+            console.log('[App] Channel removed:', channelId);
+            setServers(prev => prev.map(s => {
+                if (s.id === selectedServerId) {
+                    return { ...s, channels: s.channels.filter(c => c.id !== channelId) };
+                }
+                return s;
+            }));
+            if (selectedChannelId === channelId) {
+                setSelectedChannelId(null);
+                setChatChannelId(null);
             }
         }
     });
@@ -335,7 +369,7 @@ export default function App() {
 
     const requestLogout = () => setShowLogoutConfirm(true);
 
-    const currentUserId = auth.user?.profile.sub || '';
+
     const isServerOwner = selectedServer?.ownerId === currentUserId;
 
     const handleAddChannel = async (e: React.FormEvent) => {

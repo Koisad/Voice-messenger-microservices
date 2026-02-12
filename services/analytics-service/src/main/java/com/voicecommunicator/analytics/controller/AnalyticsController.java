@@ -4,10 +4,7 @@ import com.voicecommunicator.analytics.model.NetworkMetric;
 import com.voicecommunicator.analytics.service.AnalyticsService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -17,9 +14,9 @@ import java.util.List;
 public class AnalyticsController {
     private final AnalyticsService analyticsService;
 
-    @GetMapping("/server/{serverId}")
-    public ResponseEntity<List<NetworkMetric>> getServerMetrics(@PathVariable String serverId) {
-        return ResponseEntity.ok(analyticsService.getMetricsForServer(serverId));
+    @GetMapping("/server")
+    public ResponseEntity<List<NetworkMetric>> getServerMetrics(@RequestParam String id) {
+        return ResponseEntity.ok(analyticsService.getMetricsForServer(id));
     }
 
     @GetMapping("/room/{roomId}")

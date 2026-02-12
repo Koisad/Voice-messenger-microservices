@@ -38,6 +38,7 @@ public class NetworkMetric {
     public static class MetricMetadata {
         private String userId;
         private String serverId;
+        private String roomId;
         private String connectionType;
     }
 

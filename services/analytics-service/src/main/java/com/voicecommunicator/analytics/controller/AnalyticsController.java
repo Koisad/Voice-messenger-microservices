@@ -22,6 +22,11 @@ public class AnalyticsController {
         return ResponseEntity.ok(analyticsService.getMetricsForServer(serverId));
     }
 
+    @GetMapping("/room/{roomId}")
+    public ResponseEntity<List<NetworkMetric>> getRoomMetrics(@PathVariable String roomId) {
+        return ResponseEntity.ok(analyticsService.getMetricsForRoom(roomId));
+    }
+
     @GetMapping("/user/{userId}")
     public ResponseEntity<List<NetworkMetric>> getUserMetrics(@PathVariable String userId) {
         return ResponseEntity.ok(analyticsService.getMetricsForUser(userId));

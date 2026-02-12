@@ -9,4 +9,5 @@ import java.util.List;
 public interface NetworkMetricRepository extends MongoRepository<NetworkMetric, String> {
     List<NetworkMetric> findByMetadataServerIdAndTimestampBetween(String serverId, Instant start, Instant end);
     List<NetworkMetric> findByMetadataUserIdAndTimestampBetween(String userId, Instant start, Instant end);
+    List<NetworkMetric> findByMetadataRoomIdAndTimestampBetween(String roomId, Instant start, Instant end);
 }

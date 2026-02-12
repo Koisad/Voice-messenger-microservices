@@ -5,7 +5,6 @@ import com.voicecommunicator.analytics.repository.NetworkMetricRepository;
 import dto.NetworkMetricDTO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -23,7 +22,7 @@ public class AnalyticsService {
     private static final int BATCH_SIZE = 100;
 
     public synchronized void processMetric(NetworkMetricDTO dto) {
-        NetworkMetric.MetricMetadata metadata = new NetworkMetric.MetricMetadata(dto.getUserId(), dto.getServerId(), dto.getConnectionType());
+        NetworkMetric.MetricMetadata metadata = new NetworkMetric.MetricMetadata(dto.getUserId(), dto.getServerId(), dto.getRoomId(), dto.getConnectionType());
 
         NetworkMetric metric = NetworkMetric.builder()
                 .timestamp(dto.getTimestamp() != null ? Instant.ofEpochMilli(dto.getTimestamp()) : Instant.now())
@@ -64,5 +63,12 @@ public class AnalyticsService {
         Instant hourAgo = now.minusSeconds(3600);
 
         return networkMetricRepository.findByMetadataUserIdAndTimestampBetween(userId, hourAgo, now);
+    }
+
+    public List<NetworkMetric> getMetricsForRoom(String roomId) {
+        Instant now = Instant.now();
+        Instant hourAgo = now.minusSeconds(3600);
+
+        return networkMetricRepository.findByMetadataRoomIdAndTimestampBetween(roomId, hourAgo, now);
     }
 }

@@ -183,6 +183,7 @@ export default function App() {
         userToken: auth.user?.access_token,
         onFriendRequest: (data) => {
             console.log('[App] Friend request received:', data);
+            showToast(`Otrzymałeś zaproszenie do znajomych od ${data.senderName}`, 'info');
             setFriendNotificationTrigger(prev => prev + 1);
         },
         onFriendAccepted: (data) => {

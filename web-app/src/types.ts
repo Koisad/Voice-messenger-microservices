@@ -77,7 +77,7 @@ export interface DMConversation {
 }
 
 // WebRTC Signaling types
-export type SignalType = 'offer' | 'answer' | 'ice-candidate' | 'call-request' | 'call-accepted' | 'call-rejected' | 'call-ended';
+export type SignalType = 'offer' | 'answer' | 'ice-candidate' | 'call-request' | 'call-accepted' | 'call-rejected' | 'call-ended' | 'ping' | 'pong';
 
 export interface SignalMessage {
     type: SignalType;

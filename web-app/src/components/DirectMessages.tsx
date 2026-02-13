@@ -11,6 +11,7 @@ interface DirectMessagesProps {
     userToken?: string;
     onStartCall?: (friendId: string, friendUsername: string) => void;
     onBack: () => void;
+    onChannelSelect?: (channelId: string | null) => void;
 }
 
 export const DirectMessages: React.FC<DirectMessagesProps> = ({
@@ -18,7 +19,8 @@ export const DirectMessages: React.FC<DirectMessagesProps> = ({
     currentUsername,
     userToken,
     // onStartCall, // DISABLED
-    onBack
+    onBack,
+    onChannelSelect
 }) => {
     const [friends, setFriends] = useState<Friendship[]>([]);
     const [selectedFriend, setSelectedFriend] = useState<{ id: string; username: string; channelId: string } | null>(null);
@@ -48,6 +50,9 @@ export const DirectMessages: React.FC<DirectMessagesProps> = ({
 
     useEffect(() => {
         loadFriends();
+        return () => {
+            if (onChannelSelect) onChannelSelect(null);
+        };
     }, []);
 
     useEffect(() => {
@@ -80,6 +85,7 @@ export const DirectMessages: React.FC<DirectMessagesProps> = ({
         try {
             const { channelId } = await api.getDMChannel(friendId);
             setSelectedFriend({ id: friendId, username: friendUsername, channelId });
+            if (onChannelSelect) onChannelSelect(channelId);
         } catch (err) {
             console.error('Failed to get DM channel:', err);
         }
@@ -136,7 +142,10 @@ export const DirectMessages: React.FC<DirectMessagesProps> = ({
         return (
             <div className="dm-container">
                 <header className="dm-header">
-                    <button className="btn-back" onClick={() => setSelectedFriend(null)}>
+                    <button className="btn-back" onClick={() => {
+                        setSelectedFriend(null);
+                        if (onChannelSelect) onChannelSelect(null);
+                    }}>
                         <ArrowLeft size={20} />
                     </button>
                     <h3>{selectedFriend.username}</h3>

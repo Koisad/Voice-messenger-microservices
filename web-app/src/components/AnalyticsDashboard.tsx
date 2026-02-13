@@ -6,7 +6,7 @@ import {
     XAxis, YAxis, CartesianGrid, Tooltip,
     ResponsiveContainer
 } from 'recharts';
-import { BarChart3 } from 'lucide-react';
+import { BarChart3, Info } from 'lucide-react';
 import './AnalyticsDashboard.css';
 
 interface Props {
@@ -63,6 +63,30 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 export const AnalyticsDashboard: React.FC<Props> = ({ userId }) => {
     const [metrics, setMetrics] = useState<NetworkMetric[]>([]);
     const [loading, setLoading] = useState(false);
+    const [hoveredKpi, setHoveredKpi] = useState<string | null>(null);
+    const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
+
+    const handleMouseMove = (e: React.MouseEvent) => {
+        const tooltipWidth = 340; // 320px width + 20px padding/border approx
+        const offset = 15; // Space from cursor
+        const windowWidth = window.innerWidth;
+
+        // If tooltip would go off-screen to the right, show it on the left
+        let x = e.clientX + offset;
+        if (x + tooltipWidth > windowWidth) {
+            x = e.clientX - tooltipWidth - offset;
+        }
+
+        setTooltipPos({ x, y: e.clientY });
+    };
+
+    const kpiDescriptions: Record<string, string> = {
+        mos: "MOS (Mean Opinion Score) to uniwersalna ocena jakości rozmowy w skali od 1 do 5, gdzie 5 oznacza krystalicznie czysty dźwięk porównywalny z rozmową twarzą w twarz, a 1 brak możliwości porozumienia. Jest to wskaźnik syntetyczny, wyliczany automatycznie na podstawie opóźnień, jittera oraz utraty pakietów, który najlepiej oddaje subiektywne wrażenia użytkownika. Wynik powyżej 4.0 gwarantuje komfortową konwersację, natomiast wartości poniżej 3.5 mogą sugerować problemy ze zrozumieniem rozmówcy, metaliczny pogłos lub rwanie sygnału. To najważniejsza metryka dla szybkiej oceny ogólnego zdrowia połączenia głosowego.",
+        rtt: "RTT (Round Trip Time), potocznie nazywany pingiem, określa czas w milisekundach, jaki potrzebuje pakiet danych na dotarcie do serwera i powrót do Twojego urządzenia. Im niższa wartość, tym bardziej płynna i naturalna jest rozmowa, ponieważ opóźnienie między wypowiedzeniem słowa a jego usłyszeniem jest niezauważalne. Dla komfortowych połączeń VoIP wartość ta powinna wynosić poniżej 150 ms; wyższe opóźnienia mogą powodować irytujące zjawisko \"wchodzenia sobie w słowo\" i nienaturalne pauzy w dialogu. Wysoki RTT często wynika z dużej odległości fizycznej od serwera, słabego zasięgu WiFi lub przeciążenia łącza internetowego.",
+        loss: "Utrata pakietów wyrażona w procentach informuje, jaka część danych głosowych wysłanych przez nadawcę nigdy nie dotarła do odbiorcy. Nawet niewielka utrata rzędu 1-3% może być maskowana przez algorytmy naprawcze, jednak wyższe wartości prowadzą do \"robotycznego\" głosu, ucinania sylab lub całkowitych przerw w dźwięku. Jest to jeden z najbardziej krytycznych parametrów dla jakości audio, często spowodowany niestabilnym połączeniem WiFi lub przeciążeniem sieci lokalnej. W idealnych warunkach wskaźnik ten powinien wynosić 0%, a wartości powyżej 5% zwykle uniemożliwiają normalną komunikację.",
+        jitter: "Jitter to zmienność opóźnienia pakietów, czyli miara stabilności Twojego połączenia internetowego. Gdy pakiety docierają do odbiorcy w nieregularnych odstępach czasu – raz szybciej, raz wolniej – powstają \"korki\" lub luki w strumieniu audio. Aplikacja próbuje to naprawić, stosując bufor, ale przy wysokim jitterze może to skutkować nagłym przyspieszaniem dźwięku, zniekształceniami lub dodatkowym opóźnieniem. Niski jitter (poniżej 30 ms) oznacza stabilne łącze, podczas gdy wysokie skoki często występują przy korzystaniu z Internetu mobilnego (LTE/5G) lub zatłoczonych sieci bezprzewodowych.",
+        lost: "Całkowita liczba utraconych pakietów to sumaryczny licznik wszystkich fragmentów danych, które zaginęły w sieci od początku trwania połączenia. W przeciwieństwie do wskaźnika procentowego (który pokazuje aktualny stan „tu i teraz”), ta wartość pozwala ocenić stabilność łącza w dłuższym okresie czasu. Nagły przyrost tej liczby wskazuje na chwilowe problemy z siecią, np. moment przełączenia się między nadajnikami WiFi lub chwilowe \"czknięcie\" routera. Monitorowanie tego parametru pomaga zdiagnozować, czy problemy z jakością są incydentalne, czy też wynikają z ciągłej, słabej kondycji infrastruktury sieciowej."
+    };
 
     const fetchMetrics = useCallback(async () => {
         setLoading(true);
@@ -151,7 +175,7 @@ export const AnalyticsDashboard: React.FC<Props> = ({ userId }) => {
     };
 
     return (
-        <div className="analytics-dashboard">
+        <div className="analytics-dashboard" onMouseMove={handleMouseMove}>
             <div className="analytics-header">
                 <h2><BarChart3 size={22} /> Metryki sieci użytkownika</h2>
             </div>
@@ -171,42 +195,105 @@ export const AnalyticsDashboard: React.FC<Props> = ({ userId }) => {
             ) : (
                 <div className="analytics-content">
                     {/* KPI Cards */}
+
                     <div className="analytics-kpi-grid">
-                        <div className="analytics-kpi-card" style={{ borderLeft: `3px solid ${mosClass(mosScore)}` }}>
-                            <div className="kpi-label">Ocena Sieci (MOS)</div>
+
+                        {/* MOS */}
+                        <div
+                            className="analytics-kpi-card"
+                            style={{ borderLeft: `3px solid ${mosClass(mosScore)}` }}
+                            onMouseEnter={() => setHoveredKpi('mos')}
+                            onMouseLeave={() => setHoveredKpi(null)}
+                        >
+                            <div className="kpi-label">
+                                Ocena Sieci (MOS) <Info size={12} className="info-icon" />
+                            </div>
                             <div className="kpi-value" style={{ color: mosClass(mosScore) }}>
                                 {mosScore.toFixed(2)}
                                 <span className="kpi-unit">/ 5.0</span>
                             </div>
+
                         </div>
-                        <div className="analytics-kpi-card">
-                            <div className="kpi-label">Średni RTT (Ping)</div>
+
+                        {/* RTT */}
+                        <div
+                            className="analytics-kpi-card"
+                            onMouseEnter={() => setHoveredKpi('rtt')}
+                            onMouseLeave={() => setHoveredKpi(null)}
+                        >
+                            <div className="kpi-label">
+                                Średni RTT (Ping) <Info size={12} className="info-icon" />
+                            </div>
                             <div className="kpi-value">
                                 {avgRtt.toFixed(1)}
                                 <span className="kpi-unit">ms</span>
                             </div>
+
                         </div>
-                        <div className="analytics-kpi-card">
-                            <div className="kpi-label">Utrata pakietów</div>
+
+                        {/* Packet Loss % */}
+                        <div
+                            className="analytics-kpi-card"
+                            onMouseEnter={() => setHoveredKpi('loss')}
+                            onMouseLeave={() => setHoveredKpi(null)}
+                        >
+                            <div className="kpi-label">
+                                Utrata pakietów <Info size={12} className="info-icon" />
+                            </div>
                             <div className="kpi-value">
                                 {avgLoss.toFixed(2)}
                                 <span className="kpi-unit">%</span>
                             </div>
+
                         </div>
-                        <div className="analytics-kpi-card">
-                            <div className="kpi-label">Średni Jitter</div>
+
+                        {/* Jitter */}
+                        <div
+                            className="analytics-kpi-card"
+                            onMouseEnter={() => setHoveredKpi('jitter')}
+                            onMouseLeave={() => setHoveredKpi(null)}
+                        >
+                            <div className="kpi-label">
+                                Średni Jitter <Info size={12} className="info-icon" />
+                            </div>
                             <div className="kpi-value">
                                 {avgJitter.toFixed(1)}
                                 <span className="kpi-unit">ms</span>
                             </div>
+
                         </div>
-                        <div className="analytics-kpi-card">
-                            <div className="kpi-label">Pakiety utracone</div>
+
+                        {/* Total Lost */}
+                        <div
+                            className="analytics-kpi-card"
+                            onMouseEnter={() => setHoveredKpi('lost')}
+                            onMouseLeave={() => setHoveredKpi(null)}
+                        >
+                            <div className="kpi-label">
+                                Pakiety utracone <Info size={12} className="info-icon" />
+                            </div>
                             <div className="kpi-value">
                                 {totalLost.toLocaleString()}
                             </div>
+
                         </div>
                     </div>
+
+                    {/* Floating Tooltip */}
+                    {hoveredKpi && kpiDescriptions[hoveredKpi] && (
+                        <div
+                            className="kpi-tooltip-overlay"
+                            style={{
+                                position: 'fixed',
+                                zIndex: 9999,
+                                top: tooltipPos.y,
+                                left: tooltipPos.x,
+                                pointerEvents: 'none'
+                            }}
+                        >
+                            {kpiDescriptions[hoveredKpi]}
+                        </div>
+                    )}
 
                     {/* Charts */}
                     <div className="analytics-charts-grid">
@@ -220,7 +307,7 @@ export const AnalyticsDashboard: React.FC<Props> = ({ userId }) => {
                                 <LineChart data={chartData}>
                                     <CartesianGrid {...gridStyle} />
                                     <XAxis dataKey="time" tick={axisStyle} axisLine={false} tickLine={false} />
-                                    <YAxis tick={axisStyle} axisLine={false} tickLine={false} unit=" ms" width={60} />
+                                    <YAxis tick={axisStyle} axisLine={false} tickLine={false} unit=" ms" width={80} type="number" />
                                     <Tooltip content={<CustomTooltip />} />
                                     <Line
                                         type="linear"
@@ -245,7 +332,7 @@ export const AnalyticsDashboard: React.FC<Props> = ({ userId }) => {
                                 <LineChart data={chartData}>
                                     <CartesianGrid {...gridStyle} />
                                     <XAxis dataKey="time" tick={axisStyle} axisLine={false} tickLine={false} />
-                                    <YAxis tick={axisStyle} axisLine={false} tickLine={false} unit=" ms" width={60} />
+                                    <YAxis tick={axisStyle} axisLine={false} tickLine={false} unit=" ms" width={80} type="number" />
                                     <Tooltip content={<CustomTooltip />} />
                                     <Line
                                         type="linear"
@@ -276,7 +363,7 @@ export const AnalyticsDashboard: React.FC<Props> = ({ userId }) => {
                                     </defs>
                                     <CartesianGrid {...gridStyle} />
                                     <XAxis dataKey="time" tick={axisStyle} axisLine={false} tickLine={false} />
-                                    <YAxis tick={axisStyle} axisLine={false} tickLine={false} unit="%" width={50} />
+                                    <YAxis tick={axisStyle} axisLine={false} tickLine={false} unit="%" width={80} />
                                     <Tooltip content={<CustomTooltip />} />
                                     <Area
                                         type="stepAfter"

@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useAuth } from 'react-oidc-context';
-import { LiveKitRoom, VideoConference } from '@livekit/components-react';
+import { LiveKitRoom } from '@livekit/components-react';
 import '@livekit/components-styles';
 import { api } from './api/client';
 import type { Server, Message, MemberDTO } from './types';
@@ -19,6 +19,7 @@ import { useToast } from './hooks/useToast';
 import { AnalyticsDashboard } from './components/AnalyticsDashboard';
 import { ServerAnalyticsPanel } from './components/ServerAnalyticsPanel';
 import { useAnalyticsReporter } from './hooks/useAnalyticsReporter';
+import { CustomVideoConference } from './components/CustomVideoConference';
 
 // Wrapper component — must be inside <LiveKitRoom> to access Room context
 function AnalyticsReporterInRoom({ roomId, mediaServerUrl, userToken }: { roomId: string | null; mediaServerUrl: string; userToken?: string }) {
@@ -28,6 +29,7 @@ function AnalyticsReporterInRoom({ roomId, mediaServerUrl, userToken }: { roomId
 
 export default function App() {
     const auth = useAuth();
+    const currentUserId = auth.user?.profile.sub || '';
 
     // --- STAN DANYCH ---
     const [servers, setServers] = useState<Server[]>([]);
@@ -41,6 +43,15 @@ export default function App() {
     const [selectedServerId, setSelectedServerId] = useState<string | null>(null);
     const [selectedChannelId, setSelectedChannelId] = useState<string | null>(null); // Kanał "widoczny" (główny widok)
     const [chatChannelId, setChatChannelId] = useState<string | null>(null); // Kanał "czatowy" (do wyświetlania wiadomości)
+    const [activeDMChannelId, setActiveDMChannelId] = useState<string | null>(null); // Aktywny kanał DM (jeśli jesteśmy w widoku DM)
+
+    // Ensure LiveKit disconnects when leaving servers view to free up microphone
+    useEffect(() => {
+        if (viewMode !== 'servers') {
+            setIsVoiceActive(false);
+            setLiveKitToken("");
+        }
+    }, [viewMode]);
 
     const [showModal, setShowModal] = useState(false);
     const [modalMode, setModalMode] = useState<'CREATE' | 'JOIN'>('CREATE');
@@ -125,8 +136,18 @@ export default function App() {
         },
         onMemberLeft: (data) => {
             console.log('[App] Member left:', data);
-            if (selectedServerId) {
-                api.getServerMembers(selectedServerId).then(setMembers).catch(console.error);
+            if (data.userId === currentUserId) {
+                showToast('Zostałeś wyrzucony z serwera', 'info');
+                loadServers();
+                if (selectedServerId) {
+                    setSelectedServerId(null);
+                    setSelectedChannelId(null);
+                    setChatChannelId(null);
+                }
+            } else {
+                if (selectedServerId) {
+                    api.getServerMembers(selectedServerId).then(setMembers).catch(console.error);
+                }
             }
         },
         onServerDeleted: (deletedServerId) => {
@@ -138,6 +159,53 @@ export default function App() {
                 setChatChannelId(null);
                 showToast('Serwer został usunięty przez właściciela', 'info');
             }
+        },
+        onChannelAdded: (channel) => {
+            console.log('[App] Channel added:', channel);
+            setServers(prev => prev.map(s => {
+                if (s.id === selectedServerId) {
+                    if (s.channels.some(c => c.id === channel.id)) return s;
+                    return { ...s, channels: [...s.channels, channel] };
+                }
+                return s;
+            }));
+        },
+        onChannelRemoved: (channelId) => {
+            console.log('[App] Channel removed:', channelId);
+            setServers(prev => prev.map(s => {
+                if (s.id === selectedServerId) {
+                    return { ...s, channels: s.channels.filter(c => c.id !== channelId) };
+                }
+                return s;
+            }));
+            if (selectedChannelId === channelId) {
+                setSelectedChannelId(null);
+                setChatChannelId(null);
+            }
+        },
+        onChannelMessage: (data) => {
+            // Helper to get channel name (since notification payload might not include it, or we want local name)
+            // But payload has content. We assume we have the channel in 'servers'.
+            // data matches { serverId, channelId, senderId, senderUsername, content }
+
+            // 1. Ignore own messages
+            if (data.senderId === currentUserId) return;
+
+            // 2. Check if we are currently viewing this channel
+            // We are viewing if viewMode is 'servers', selectedServerId matches, AND chatChannelId matches logic.
+            // Note: chatChannelId is the TEXT channel. selectedChannelId usually syncs with it for text channels.
+            const isViewing = viewMode === 'servers' &&
+                selectedServerId === data.serverId &&
+                chatChannelId === data.channelId;
+
+            if (isViewing) return;
+
+            // 3. Find channel name for better toast
+            const server = servers.find(s => s.id === data.serverId);
+            const channel = server?.channels.find(c => c.id === data.channelId);
+            const channelName = channel?.name || data.channelId;
+
+            showToast(`#${channelName}: ${data.content}`, 'message');
         }
     });
 
@@ -149,6 +217,7 @@ export default function App() {
         userToken: auth.user?.access_token,
         onFriendRequest: (data) => {
             console.log('[App] Friend request received:', data);
+            showToast(`Otrzymałeś zaproszenie do znajomych od ${data.senderName}`, 'info');
             setFriendNotificationTrigger(prev => prev + 1);
         },
         onFriendAccepted: (data) => {
@@ -164,6 +233,13 @@ export default function App() {
             // Trigger incoming call in WebRTC
             // Note: The signaling service handles the WebRTC offer separately via WebSocket
             // This notification is just to alert the user of an incoming call
+        },
+        onDMReceived: (data) => {
+            // Check if we are currently viewing this DM
+            const isViewing = viewMode === 'dms' && activeDMChannelId === data.channelId;
+            if (isViewing) return;
+
+            showToast(`${data.senderName}: ${data.content}`, 'message');
         }
     });
 
@@ -178,6 +254,17 @@ export default function App() {
         }
     }, [auth.isAuthenticated]);
 
+    // Helper for voice connection
+    const connectToVoiceChannel = (channelId: string) => {
+        api.getLiveKitToken(channelId)
+            .then(data => {
+                setLiveKitToken(data.token);
+                setLiveKitUrl(data.serverUrl);
+                setIsVoiceActive(true);
+            })
+            .catch(err => console.error("Błąd LiveKit:", err));
+    };
+
     // 2. Obsługa zmiany kanału (Tekst vs Głos)
     useEffect(() => {
         if (!selectedChannel || !selectedServerId) return;
@@ -187,13 +274,11 @@ export default function App() {
 
         // Obsługa LiveKit (tylko dla kanałów głosowych)
         if (selectedChannel.type === 'VOICE') {
-            api.getLiveKitToken(selectedChannel.id)
-                .then(data => {
-                    setLiveKitToken(data.token);
-                    setLiveKitUrl(data.serverUrl);
-                    setIsVoiceActive(true);
-                })
-                .catch(err => console.error("Błąd LiveKit:", err));
+            // Jeśli kanał głosowy jest wybrany, ale nie jesteśmy połączeni (bo np. użytkownik się rozłączył),
+            // to useEffect NIE powinien automatycznie łączyć PONOWNIE przy każdym renderze, 
+            // ale przy ZMIANIE kanału (selectedChannelId changes) - tak.
+            // W tym układzie dependencies [selectedChannelId] załatwiają sprawę.
+            connectToVoiceChannel(selectedChannel.id);
         } else {
             setIsVoiceActive(false);
             setLiveKitToken("");
@@ -335,7 +420,7 @@ export default function App() {
 
     const requestLogout = () => setShowLogoutConfirm(true);
 
-    const currentUserId = auth.user?.profile.sub || '';
+
     const isServerOwner = selectedServer?.ownerId === currentUserId;
 
     const handleAddChannel = async (e: React.FormEvent) => {
@@ -582,6 +667,7 @@ export default function App() {
                     <ServerAnalyticsPanel
                         serverId={selectedServerId}
                         mediaServerUrl={liveKitUrl}
+                        currentUserId={currentUserId}
                     />
 
                     {!isServerOwner && (
@@ -614,9 +700,11 @@ export default function App() {
                     </div>
                 </div>
             ) : (
-                <div className="channel-sidebar placeholder">
-                    <p>Wybierz serwer</p>
-                </div>
+                !['friends', 'dms', 'analytics'].includes(viewMode) && (
+                    <div className="channel-sidebar placeholder">
+                        <p>Wybierz serwer</p>
+                    </div>
+                )
             )}
 
             {/* Conditional render based on view mode */}
@@ -636,6 +724,7 @@ export default function App() {
                     currentUsername={auth.user?.profile.preferred_username || ''}
                     userToken={auth.user?.access_token}
                     onBack={() => setViewMode('servers')}
+                    onChannelSelect={setActiveDMChannelId}
                 />
             )}
 
@@ -651,6 +740,17 @@ export default function App() {
                         <h2>Witaj w Voice Messenger 👋</h2>
                         <p>Wybierz serwer z lewej strony lub stwórz nowy.</p>
                     </div>
+                ) : selectedChannel?.type === 'VOICE' && !isVoiceActive ? (
+                    <div className="welcome">
+                        <div className="no-channel-selected">
+                            <Volume2 size={48} color="#4b5563" />
+                            <h3>{selectedChannel.name}</h3>
+                            <p>Kanał głosowy (Rozłączono)</p>
+                            <button className="btn btn-primary" onClick={() => connectToVoiceChannel(selectedChannel.id)}>
+                                Dołącz
+                            </button>
+                        </div>
+                    </div>
                 ) : isVoiceActive && liveKitToken ? (
                     <div className="voice-chat-container">
                         <div className="voice-video-area">
@@ -663,8 +763,13 @@ export default function App() {
                                 data-lk-theme="default"
                                 style={{ height: '100%', display: 'flex', flexDirection: 'column' }}
                                 onError={(err) => console.error("LiveKit Error:", err)}
+                                onDisconnected={() => {
+                                    console.log("Disconnected from Room");
+                                    setIsVoiceActive(false);
+                                    setLiveKitToken("");
+                                }}
                             >
-                                <VideoConference />
+                                <CustomVideoConference />
                                 <AnalyticsReporterInRoom roomId={selectedServerId} mediaServerUrl={liveKitUrl} userToken={auth.user?.access_token} />
                             </LiveKitRoom>
                         </div>
@@ -854,7 +959,14 @@ export default function App() {
                 remotePeer={webrtcCall.remotePeer}
                 remoteStream={webrtcCall.remoteStream}
                 localStream={webrtcCall.localStream}
-                onAnswer={webrtcCall.answerCall}
+                onAnswer={() => {
+                    if (isVoiceActive) {
+                        setIsVoiceActive(false);
+                        setLiveKitToken("");
+                        showToast("Rozłączono z kanału głosowego, aby odebrać połączenie.", "info");
+                    }
+                    webrtcCall.answerCall();
+                }}
                 onReject={webrtcCall.rejectCall}
                 onEnd={webrtcCall.endCall}
             />

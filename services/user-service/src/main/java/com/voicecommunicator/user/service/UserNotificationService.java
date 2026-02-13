@@ -1,4 +1,4 @@
-package com.voicecommunicator.room.service;
+package com.voicecommunicator.user.service;
 
 import com.voicecommunicator.common.event.NotificationEvent;
 import lombok.RequiredArgsConstructor;
@@ -11,7 +11,7 @@ import java.util.Map;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class RoomNotificationService {
+public class UserNotificationService {
 
     private final SimpMessagingTemplate messagingTemplate;
 

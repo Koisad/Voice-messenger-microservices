@@ -1,4 +1,4 @@
-package com.voicecommunicator.room.dto;
+package com.voicecommunicator.user.dto;
 
 import lombok.Data;
 

@@ -1,7 +1,7 @@
-package com.voicecommunicator.room.controller;
+package com.voicecommunicator.user.controller;
 
-import com.voicecommunicator.room.model.AppUser;
-import com.voicecommunicator.room.service.AppUserService;
+import com.voicecommunicator.user.model.AppUser;
+import com.voicecommunicator.user.service.AppUserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;

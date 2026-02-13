@@ -1,4 +1,4 @@
-package com.voicecommunicator.room.model;
+package com.voicecommunicator.user.model;
 
 public enum FriendshipStatus {
     PENDING,

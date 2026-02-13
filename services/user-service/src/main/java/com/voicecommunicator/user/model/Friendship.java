@@ -1,4 +1,4 @@
-package com.voicecommunicator.room.model;
+package com.voicecommunicator.user.model;
 
 import lombok.Builder;
 import lombok.Data;

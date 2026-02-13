@@ -1,7 +1,7 @@
-package com.voicecommunicator.room.repository;
+package com.voicecommunicator.user.repository;
 
-import com.voicecommunicator.room.model.Friendship;
-import com.voicecommunicator.room.model.FriendshipStatus;
+import com.voicecommunicator.user.model.Friendship;
+import com.voicecommunicator.user.model.FriendshipStatus;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.data.mongodb.repository.Query;
 

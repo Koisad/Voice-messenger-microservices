@@ -1,8 +1,8 @@
-package com.voicecommunicator.room.service;
+package com.voicecommunicator.user.service;
 
-import com.voicecommunicator.room.model.Friendship;
-import com.voicecommunicator.room.model.FriendshipStatus;
-import com.voicecommunicator.room.repository.FriendshipRepository;
+import com.voicecommunicator.user.model.Friendship;
+import com.voicecommunicator.user.model.FriendshipStatus;
+import com.voicecommunicator.user.repository.FriendshipRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -13,7 +13,7 @@ import java.util.List;
 public class FriendshipService {
 
     private final FriendshipRepository friendshipRepository;
-    private final RoomNotificationService roomNotificationService;
+    private final UserNotificationService userNotificationService;
 
     public void sendFriendshipRequest(String requesterId, String requesterUsername, String addresseeId, String addresseeUsername) {
         if (requesterId.equals(addresseeId)) {
@@ -33,7 +33,7 @@ public class FriendshipService {
                 .build();
 
         friendshipRepository.save(friendship);
-        roomNotificationService.notifyFriendRequest(requesterId, requesterUsername, addresseeId);
+        userNotificationService.notifyFriendRequest(requesterId, requesterUsername, addresseeId);
     }
 
     public void acceptFriendshipRequest(String addresseeId, String friendshipId) {
@@ -46,7 +46,7 @@ public class FriendshipService {
         friendship.setStatus(FriendshipStatus.FRIENDS);
         friendshipRepository.save(friendship);
 
-        roomNotificationService.notifyFriendAccepted(
+        userNotificationService.notifyFriendAccepted(
                 friendship.getAddresseeId(),
                 friendship.getAddresseeUsername(),
                 friendship.getRequesterId()
@@ -67,7 +67,7 @@ public class FriendshipService {
 
         friendshipRepository.delete(friendship);
 
-        roomNotificationService.notifyFriendRemoved(user1Id, user2Id);
-        roomNotificationService.notifyFriendRemoved(user2Id, user1Id);
+        userNotificationService.notifyFriendRemoved(user1Id, user2Id);
+        userNotificationService.notifyFriendRemoved(user2Id, user1Id);
     }
 }

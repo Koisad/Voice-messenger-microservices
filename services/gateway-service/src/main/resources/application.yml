@@ -38,7 +38,7 @@ spring:
         - id: room-route
           uri: ${ROOM_URI}
           predicates:
-            - Path=/api/servers/**, /api/friendships/**, /api/users/**
+            - Path=/api/servers/**
         - id: ai-route
           uri: ${AI_URI}
           predicates:
@@ -51,3 +51,12 @@ spring:
           uri: ${MEDIA_URI}
           predicates:
             - Path=/api/media/**
+        - id: user-service-users
+          uri: ${USER_URI}
+          predicates:
+            - Path=/api/users/**
+        - id: user-service-friends
+          uri: ${USER_URI}
+          predicates:
+            - Path=/api/friendships/**
+

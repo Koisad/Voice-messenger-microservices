@@ -1,8 +1,8 @@
-package com.voicecommunicator.room.controller;
+package com.voicecommunicator.user.controller;
 
-import com.voicecommunicator.room.dto.FriendRequestDTO;
-import com.voicecommunicator.room.model.Friendship;
-import com.voicecommunicator.room.service.FriendshipService;
+import com.voicecommunicator.user.dto.FriendRequestDTO;
+import com.voicecommunicator.user.model.Friendship;
+import com.voicecommunicator.user.service.FriendshipService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;

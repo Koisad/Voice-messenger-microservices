@@ -207,7 +207,8 @@ export default function App() {
             // data matches { serverId, channelId, senderId, senderUsername, content }
 
             // 1. Ignore own messages
-            if (data.senderId === currentUserId) return;
+            // Check both ID and username to be robust against format mismatches
+            if (data.senderId === currentUserId || data.senderUsername === auth.user?.profile.preferred_username) return;
 
             // 2. Check if we are currently viewing this channel
             // We are viewing if viewMode is 'servers', selectedServerId matches, AND chatChannelId matches logic.
@@ -261,7 +262,9 @@ export default function App() {
             if (isViewing) return;
 
             // Ignore own messages for unread count
-            if (data.senderId === auth.user?.profile.sub) return;
+            const myId = auth.user?.profile.sub;
+            const myUsername = auth.user?.profile.preferred_username;
+            if (data.senderId === myId || data.senderName === myUsername) return;
 
             showToast(`${data.senderName}: ${data.content}`, 'message');
             // TODO: Handle DM unread counts (requires DM channel ID management in useUnreadMessages or separate logic)

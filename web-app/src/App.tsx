@@ -362,23 +362,37 @@ export default function App() {
 
     // 2. Obsługa zmiany kanału (Tekst vs Głos)
     useEffect(() => {
-        if (!selectedChannel || !selectedServerId) return;
+        if (!selectedChannel || !selectedServerId) {
+            setIsVoiceActive(false);
+            setLiveKitToken("");
+            return;
+        }
 
-        // Reset wiadomości tylko jeśli zmienia się kanał CZATU
-        // (Logika przeniesiona niżej do useEffect zależnego od chatChannelId)
+        let isMounted = true;
 
         // Obsługa LiveKit (tylko dla kanałów głosowych)
         if (selectedChannel.type === 'VOICE') {
-            // Jeśli kanał głosowy jest wybrany, ale nie jesteśmy połączeni (bo np. użytkownik się rozłączył),
-            // to useEffect NIE powinien automatycznie łączyć PONOWNIE przy każdym renderze, 
-            // ale przy ZMIANIE kanału (selectedChannelId changes) - tak.
-            // W tym układzie dependencies [selectedChannelId] załatwiają sprawę.
-            connectToVoiceChannel(selectedChannel.id);
+            api.getLiveKitToken(selectedChannel.id)
+                .then(data => {
+                    if (isMounted) {
+                        setLiveKitToken(data.token);
+                        setLiveKitUrl(data.serverUrl);
+                        setIsVoiceActive(true);
+                    }
+                })
+                .catch(err => {
+                    if (isMounted) console.error("Błąd LiveKit:", err);
+                });
         } else {
+            // Jeśli to nie kanał głosowy, a byliśmy w trybie głosowym - wyłączamy
             setIsVoiceActive(false);
             setLiveKitToken("");
         }
-    }, [selectedChannelId, selectedServerId]);
+
+        return () => {
+            isMounted = false;
+        };
+    }, [selectedChannelId, selectedServerId, selectedChannel]);
 
     // 2a. Pobieranie wiadomości przy zmianie chatChannelId
     useEffect(() => {

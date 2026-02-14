@@ -123,19 +123,18 @@ export const api = {
 
     updateProfile: async (displayName?: string, avatar?: File): Promise<User> => {
         const formData = new FormData();
-        if (displayName) formData.append('displayName', displayName);
         if (avatar) formData.append('avatar', avatar);
 
-        const token = localStorage.getItem('access_token'); // Or however you get token
-        // We need special handling for multipart/form-data with auth header but NO Content-Type header (browser sets it with boundary)
+        const url = new URL(`${window.location.protocol}//${window.location.host}${BASE_URL}/users/me`);
+        if (displayName) url.searchParams.append('displayName', displayName);
 
+        const token = localStorage.getItem('access_token');
         const headers: HeadersInit = {};
         if (token) {
             headers['Authorization'] = `Bearer ${token}`;
         }
-        // Do NOT set Content-Type: multipart/form-data here, browser does it automatically
 
-        const res = await fetch(`${BASE_URL}/users/me`, {
+        const res = await fetch(url.toString(), {
             method: 'PATCH',
             headers: headers,
             body: formData

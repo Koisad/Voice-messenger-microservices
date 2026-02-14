@@ -5,6 +5,7 @@ import com.voicecommunicator.chat.repository.MessageRepository;
 import com.voicecommunicator.chat.repository.ReadStateRepository;
 import com.voicecommunicator.common.event.NotificationEvent;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Service;
 
@@ -15,6 +16,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class ReadStateService {
 
@@ -32,16 +34,23 @@ public class ReadStateService {
         readState.setLastReadAt(Instant.now());
         readStateRepository.save(readState);
 
-        NotificationEvent event = new NotificationEvent(
-                "CHANNEL_READ",
-                Map.of("channelId", channelId)
-        );
+        try {
+            NotificationEvent event = new NotificationEvent(
+                    "CHANNEL_READ",
+                    Map.of("channelId", channelId));
 
-        String routingKey = "user." + userId + ".read";
-        rabbitTemplate.convertAndSend("amq.topic", routingKey, event);
+            String routingKey = "user." + userId + ".read";
+            rabbitTemplate.convertAndSend("amq.topic", routingKey, event);
+        } catch (Exception e) {
+            log.info("Failed to send read notification: {}", e.getMessage());
+        }
     }
 
     public Map<String, Long> getUnreadCounts(String userId, List<String> channelIds) {
+        if (channelIds == null || channelIds.isEmpty()) {
+            return new HashMap<>();
+        }
+
         List<ReadState> states = readStateRepository.findByUserIdAndChannelIdIn(userId, channelIds);
 
         Map<String, Instant> readMap = states.stream()

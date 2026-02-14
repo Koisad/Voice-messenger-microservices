@@ -3,7 +3,7 @@ import { useAuth } from 'react-oidc-context';
 import { LiveKitRoom } from '@livekit/components-react';
 import '@livekit/components-styles';
 import { api } from './api/client';
-import type { Server, Message, MemberDTO } from './types';
+import type { Server, Message, MemberDTO, User } from './types';
 import './App.css';
 import { Hash, Volume2, Plus, LogOut, Copy, Users, MessageCircle, AlertTriangle, Eye, EyeOff, Trash2, UserX, DoorOpen, BarChart3 } from 'lucide-react';
 import { useChatSocket } from './hooks/useChatSocket';
@@ -36,6 +36,7 @@ export default function App() {
     const [servers, setServers] = useState<Server[]>([]);
     const [messages, setMessages] = useState<Message[]>([]);
     const [members, setMembers] = useState<MemberDTO[]>([]);
+    const [currentUser, setCurrentUser] = useState<User | null>(null);
     const { toasts, showToast, removeToast } = useToast();
     const { unreadCounts, fetchUnreadCounts, incrementUnreadCount, markAsRead } = useUnreadMessages(currentUserId);
 
@@ -207,8 +208,13 @@ export default function App() {
             // data matches { serverId, channelId, senderId, senderUsername, content }
 
             // 1. Ignore own messages
-            // Check both ID and username to be robust against format mismatches
-            if (data.senderId === currentUserId || data.senderUsername === auth.user?.profile.preferred_username) return;
+            // Check both ID and username to be robust against format mismatches. 
+            // Also check against backend User ID (currentUser.id) if available.
+            const isSelf = data.senderId === currentUserId ||
+                data.senderUsername === auth.user?.profile.preferred_username ||
+                (currentUser && data.senderId === currentUser.id);
+
+            if (isSelf) return;
 
             // 2. Check if we are currently viewing this channel
             // We are viewing if viewMode is 'servers', selectedServerId matches, AND chatChannelId matches logic.
@@ -264,7 +270,12 @@ export default function App() {
             // Ignore own messages for unread count
             const myId = auth.user?.profile.sub;
             const myUsername = auth.user?.profile.preferred_username;
-            if (data.senderId === myId || data.senderName === myUsername) return;
+
+            const isSelf = data.senderId === myId ||
+                data.senderName === myUsername ||
+                (currentUser && data.senderId === currentUser.id);
+
+            if (isSelf) return;
 
             showToast(`${data.senderName}: ${data.content}`, 'message');
             // TODO: Handle DM unread counts (requires DM channel ID management in useUnreadMessages or separate logic)
@@ -280,7 +291,10 @@ export default function App() {
     useEffect(() => {
         if (auth.isAuthenticated) {
             api.syncUser()
-                .then(() => console.log('[AppUser] Sync successful'))
+                .then((user) => {
+                    console.log('[AppUser] Sync successful', user);
+                    setCurrentUser(user);
+                })
                 .catch(err => console.error('[AppUser] Sync failed:', err));
             loadServers();
             window.history.replaceState({}, document.title, window.location.pathname);

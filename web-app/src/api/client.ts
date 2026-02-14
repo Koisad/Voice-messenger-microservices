@@ -126,7 +126,7 @@ export const api = {
         if (avatar) formData.append('avatar', avatar);
         if (displayName) formData.append('displayName', displayName);
 
-        const token = localStorage.getItem('access_token');
+        const token = getUserToken();
         const headers: HeadersInit = {};
         if (token) {
             headers['Authorization'] = `Bearer ${token}`;

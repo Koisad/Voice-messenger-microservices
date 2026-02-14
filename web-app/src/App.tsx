@@ -123,9 +123,10 @@ export default function App() {
     useEffect(() => {
         if (selectedServerId && selectedServer) {
             const channelIds = selectedServer.channels.map(c => c.id);
-            fetchUnreadCounts(channelIds);
+            // Pass chatChannelId to ignore it in the unread counts update (avoid race condition)
+            fetchUnreadCounts(channelIds, chatChannelId || undefined);
         }
-    }, [selectedServerId, selectedServer, fetchUnreadCounts]);
+    }, [selectedServerId, selectedServer, chatChannelId, fetchUnreadCounts]);
 
     // Mark as read when channel changes
     useEffect(() => {

@@ -13,17 +13,18 @@ export const useUnreadMessages = (userId?: string) => {
         setUnreadCounts(newCounts);
     };
 
-    const fetchUnreadCounts = useCallback(async (channelIds: string[]) => {
+    const fetchUnreadCounts = useCallback(async (channelIds: string[], ignoreChannelId?: string) => {
         if (!userId || channelIds.length === 0) return;
         try {
             const counts = await api.getUnreadCounts(channelIds);
-            // Merge with existing counts (or replace? usually replace for a set of channels)
-            // But we might have other channels in state (e.g. from other servers if we cached them? No, we usually just care about current view)
-            // Let's merge to be safe, but typically we reset when switching servers.
-            // For now, let's just update the keys we got
 
             setUnreadCounts(prev => {
                 const next = { ...prev, ...counts };
+                // If we are currently on a channel, ensure it stays marked as read (0 or undefined)
+                // even if the server returned a count (race condition)
+                if (ignoreChannelId && next[ignoreChannelId]) {
+                    delete next[ignoreChannelId];
+                }
                 unreadCountsRef.current = next;
                 return next;
             });

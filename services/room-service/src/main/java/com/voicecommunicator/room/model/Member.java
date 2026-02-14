@@ -9,12 +9,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 public class Member {
     @Id
     private String id;
-
     private String serverId;
-
-    private String username;
-
     private String userId;
-
     private Role role;
 }

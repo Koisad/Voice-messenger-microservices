@@ -260,6 +260,9 @@ export default function App() {
             const isViewing = viewMode === 'dms' && activeDMChannelId === data.channelId;
             if (isViewing) return;
 
+            // Ignore own messages for unread count
+            if (data.senderId === auth.user?.profile.sub) return;
+
             showToast(`${data.senderName}: ${data.content}`, 'message');
             // TODO: Handle DM unread counts (requires DM channel ID management in useUnreadMessages or separate logic)
             // For now, focusing on server channels per user request emphasis on "chat-service" context usually implied there.
@@ -758,7 +761,12 @@ export default function App() {
                     currentUsername={auth.user?.profile.preferred_username || ''}
                     userToken={auth.user?.access_token}
                     onBack={() => setViewMode('servers')}
-                    onChannelSelect={setActiveDMChannelId}
+                    onChannelSelect={(channelId) => {
+                        setActiveDMChannelId(channelId);
+                        if (channelId) markAsRead(channelId);
+                    }}
+                    unreadCounts={unreadCounts}
+                    fetchUnreadCounts={fetchUnreadCounts}
                 />
             )}
 

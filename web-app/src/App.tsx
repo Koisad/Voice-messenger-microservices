@@ -810,7 +810,20 @@ export default function App() {
                         <div className="voice-chat-sidebar">
                             <header className="chat-header">
                                 <Hash size={24} color="#949ba4" />
-                                <span>{chatChannel?.name || "Czat"}</span>
+                                <select
+                                    className="channel-switcher"
+                                    value={chatChannelId || ""}
+                                    onChange={(e) => setChatChannelId(e.target.value)}
+                                >
+                                    {selectedServer?.channels
+                                        .filter(c => c.type === 'TEXT')
+                                        .map(c => (
+                                            <option key={c.id} value={c.id}>
+                                                {c.name} {unreadCounts[c.id] > 0 ? `(${unreadCounts[c.id]})` : ''}
+                                            </option>
+                                        ))
+                                    }
+                                </select>
                             </header>
 
                             <div className="messages-list">

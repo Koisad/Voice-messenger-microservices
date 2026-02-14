@@ -281,6 +281,23 @@ html,
     /* Header size fixed */
 }
 
+.channel-switcher {
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    border: 1px solid var(--bg-tertiary);
+    border-radius: 4px;
+    padding: 4px 8px;
+    font-size: 14px;
+    font-weight: 600;
+    outline: none;
+    cursor: pointer;
+    flex: 1;
+}
+
+.channel-switcher:hover {
+    background-color: var(--bg-accent);
+}
+
 .messages-list {
     flex: 1;
     padding: 16px;
@@ -752,6 +769,7 @@ label {
     text-align: center;
     line-height: 1;
 }
+
 .member-item {
     display: flex;
     align-items: center;

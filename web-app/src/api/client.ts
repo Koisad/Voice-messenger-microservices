@@ -1,4 +1,4 @@
-import type { Server, Message, CreateServerRequest, SendMessageRequest, LiveKitTokenResponse, MemberDTO, Friendship, NetworkMetric } from '../types';
+import type { Server, Message, CreateServerRequest, SendMessageRequest, LiveKitTokenResponse, MemberDTO, Friendship, NetworkMetric, User } from '../types';
 import { getUserToken } from './config';
 
 const BASE_URL = '/api';
@@ -112,15 +112,40 @@ export const api = {
     },
 
     // User Management
-    syncUser: async (): Promise<void> => {
+    syncUser: async (): Promise<User> => {
         const res = await fetch(`${BASE_URL}/users/sync`, {
             method: 'POST',
             headers: getHeaders()
         });
         if (!res.ok) throw new Error('Failed to sync user');
+        return res.json();
     },
 
-    searchUsers: async (query: string): Promise<{ userId: string; username: string }[]> => {
+    updateProfile: async (displayName?: string, avatar?: File): Promise<User> => {
+        const formData = new FormData();
+        if (displayName) formData.append('displayName', displayName);
+        if (avatar) formData.append('avatar', avatar);
+
+        const token = localStorage.getItem('access_token'); // Or however you get token
+        // We need special handling for multipart/form-data with auth header but NO Content-Type header (browser sets it with boundary)
+
+        const headers: HeadersInit = {};
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+        }
+        // Do NOT set Content-Type: multipart/form-data here, browser does it automatically
+
+        const res = await fetch(`${BASE_URL}/users/me`, {
+            method: 'PATCH',
+            headers: headers,
+            body: formData
+        });
+
+        if (!res.ok) throw new Error('Failed to update profile');
+        return res.json();
+    },
+
+    searchUsers: async (query: string): Promise<User[]> => {
         const params = new URLSearchParams({ query });
         const res = await fetch(`${BASE_URL}/users/search?${params.toString()}`, {
             headers: getHeaders()

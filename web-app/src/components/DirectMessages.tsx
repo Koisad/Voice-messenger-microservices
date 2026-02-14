@@ -3,6 +3,7 @@ import { api } from '../api/client';
 import type { Friendship, Message } from '../types';
 import { /* Phone, */ ArrowLeft, Send, AlertTriangle, Eye, EyeOff } from 'lucide-react';
 import { useChatSocket } from '../hooks/useChatSocket';
+import { UserBar } from './UserBar';
 import './DirectMessages.css';
 
 interface DirectMessagesProps {
@@ -14,6 +15,8 @@ interface DirectMessagesProps {
     onChannelSelect?: (channelId: string | null) => void;
     unreadCounts?: Record<string, number>;
     fetchUnreadCounts?: (channelIds: string[], ignoreChannelId?: string) => Promise<void>;
+    currentUser: any;
+    onOpenSettings: () => void;
 }
 
 export const DirectMessages: React.FC<DirectMessagesProps> = ({
@@ -24,7 +27,9 @@ export const DirectMessages: React.FC<DirectMessagesProps> = ({
     onBack,
     onChannelSelect,
     unreadCounts = {},
-    fetchUnreadCounts
+    fetchUnreadCounts,
+    currentUser,
+    onOpenSettings
 }) => {
     // Extend Friendship with channelId
     type FriendWithChannel = Friendship & { channelId?: string };
@@ -79,8 +84,7 @@ export const DirectMessages: React.FC<DirectMessagesProps> = ({
             // Map friend IDs to channel IDs in parallel
             const friendsWithChannels = await Promise.all(validFriends.map(async (f) => {
                 try {
-                    const friendId = f.requesterId === currentUserId ? f.addresseeId : f.requesterId;
-                    const { channelId } = await api.getDMChannel(friendId);
+                    const { channelId } = await api.getDMChannel(f.friendId);
                     return { ...f, channelId };
                 } catch (e) {
                     return f;
@@ -101,25 +105,18 @@ export const DirectMessages: React.FC<DirectMessagesProps> = ({
     };
 
     const selectFriend = async (friendship: FriendWithChannel) => {
-        const friendId = friendship.requesterId === currentUserId
-            ? friendship.addresseeId
-            : friendship.requesterId;
-        const friendUsername = friendship.requesterId === currentUserId
-            ? friendship.addresseeUsername
-            : friendship.requesterUsername;
-
         try {
             // Use cached channelId if available, otherwise fetch
             let channelId = friendship.channelId;
             if (!channelId) {
-                const res = await api.getDMChannel(friendId);
+                const res = await api.getDMChannel(friendship.friendId);
                 channelId = res.channelId;
                 // Update state to cache it
                 setFriends(prev => prev.map(f => f.id === friendship.id ? { ...f, channelId } : f));
             }
 
             if (channelId) {
-                setSelectedFriend({ id: friendId, username: friendUsername, channelId });
+                setSelectedFriend({ id: friendship.friendId, username: friendship.friendUsername, channelId });
                 if (onChannelSelect) onChannelSelect(channelId);
             }
         } catch (err) {
@@ -167,12 +164,8 @@ export const DirectMessages: React.FC<DirectMessagesProps> = ({
         );
     }, [messages, socketMessages]);
 
-    const getFriendInfo = (friendship: Friendship) => {
-        if (friendship.requesterId === currentUserId) {
-            return { id: friendship.addresseeId, username: friendship.addresseeUsername };
-        }
-        return { id: friendship.requesterId, username: friendship.requesterUsername };
-    };
+    // Helper removed as Friendship DTO now has flattened friend info
+    // const getFriendInfo = ...
 
     if (selectedFriend) {
         return (
@@ -262,41 +255,49 @@ export const DirectMessages: React.FC<DirectMessagesProps> = ({
                 <h2>Wiadomości Prywatne</h2>
             </header>
 
-            <div className="dm-list">
-                {friends.length === 0 ? (
-                    <div className="empty-state">
-                        <p>Brak znajomych do rozmowy</p>
-                        <p className="hint">Dodaj znajomych, aby rozpocząć konwersację</p>
-                    </div>
-                ) : (
-                    friends.map(friendship => {
-                        const friend = getFriendInfo(friendship);
-                        return (
+            <div className="dm-list" style={{ display: 'flex', flexDirection: 'column' }}>
+                <div style={{ flex: 1, overflowY: 'auto' }}>
+                    {friends.length === 0 ? (
+                        <div className="empty-state">
+                            <p>Brak znajomych do rozmowy</p>
+                            <p className="hint">Dodaj znajomych, aby rozpocząć konwersację</p>
+                        </div>
+                    ) : (
+                        friends.map(friendship => (
                             <div
                                 key={friendship.id}
                                 className="dm-item"
                                 onClick={() => selectFriend(friendship)}
                             >
-                                <div className="message-avatar" />
+                                <div className="message-avatar">
+                                    {friendship.friendAvatarUrl ? (
+                                        <img src={friendship.friendAvatarUrl} alt={friendship.friendUsername} className="user-avatar-img" />
+                                    ) : (
+                                        <div className="user-avatar-placeholder">
+                                            {(friendship.friendUsername || "?").substring(0, 2).toUpperCase()}
+                                        </div>
+                                    )}
+                                </div>
                                 <div className="dm-info">
                                     <span className="dm-friend-name" style={{
-                                        fontWeight: (friendship.channelId && unreadCounts[friendship.channelId]) ? 'bold' : 'normal'
+                                        fontWeight: (friendship.id && unreadCounts[friendship.id]) ? 'bold' : 'normal'
                                     }}>
-                                        {friend.username}
+                                        {friendship.friendUsername}
                                     </span>
-                                    {friendship.channelId && unreadCounts[friendship.channelId] ? (
+                                    {friendship.id && unreadCounts[friendship.id] ? (
                                         <span className="unread-badge">
-                                            {unreadCounts[friendship.channelId] > 99 ? '99+' : unreadCounts[friendship.channelId]}
+                                            {unreadCounts[friendship.id] > 99 ? '99+' : unreadCounts[friendship.id]}
                                         </span>
                                     ) : (
                                         <span className="dm-hint">Kliknij, aby otworzyć czat</span>
                                     )}
                                 </div>
                             </div>
-                        );
-                    })
-                )}
+                        ))
+                    )}
+                </div>
+                <UserBar currentUser={currentUser} onOpenSettings={onOpenSettings} />
             </div>
-        </div>
+        </div >
     );
 };

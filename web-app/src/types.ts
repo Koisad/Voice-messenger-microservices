@@ -1,6 +1,9 @@
 export interface User {
     id: string;
     username: string;
+    displayName?: string;
+    avatarUrl?: string;
+    email?: string;
 }
 
 export interface Channel {
@@ -46,6 +49,8 @@ export interface LiveKitTokenResponse {
 export interface Member {
     userId: string;
     username: string;
+    displayName?: string;
+    avatarUrl?: string;
     role: string;
 }
 
@@ -56,11 +61,12 @@ export type FriendshipStatus = 'PENDING' | 'FRIENDS';
 
 export interface Friendship {
     id: string;
+    friendId: string;
+    friendUsername: string;
+    friendDisplayName: string;
+    friendAvatarUrl?: string;
     status: FriendshipStatus;
-    requesterId: string;
-    requesterUsername: string;
-    addresseeId: string;
-    addresseeUsername: string;
+    isIncoming: boolean;
 }
 
 export interface FriendUser {

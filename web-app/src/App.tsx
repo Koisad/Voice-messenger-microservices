@@ -1,5 +1,7 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useAuth } from 'react-oidc-context';
+import { UserSettingsModal } from './components/UserSettingsModal';
+import { UserBar } from './components/UserBar';
 import { LiveKitRoom } from '@livekit/components-react';
 import '@livekit/components-styles';
 import { api } from './api/client';
@@ -36,7 +38,7 @@ export default function App() {
     const [servers, setServers] = useState<Server[]>([]);
     const [messages, setMessages] = useState<Message[]>([]);
     const [members, setMembers] = useState<MemberDTO[]>([]);
-    const [currentUser] = useState<User | null>(null);
+    const [currentUser, setCurrentUser] = useState<User | null>(null);
     const { toasts, showToast, removeToast } = useToast();
     const { unreadCounts, fetchUnreadCounts, incrementUnreadCount, markAsRead } = useUnreadMessages(currentUserId);
 
@@ -61,6 +63,7 @@ export default function App() {
     const [inputVal, setInputVal] = useState("");
     const [messageInput, setMessageInput] = useState("");
     const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+    const [showSettingsModal, setShowSettingsModal] = useState(false);
 
     // --- CHANNEL MANAGEMENT ---
     const [showAddChannel, setShowAddChannel] = useState(false);
@@ -336,8 +339,9 @@ export default function App() {
     useEffect(() => {
         if (auth.isAuthenticated) {
             api.syncUser()
-                .then(() => {
-                    console.log('[AppUser] Sync completed');
+                .then((user) => {
+                    console.log('[AppUser] Sync completed', user);
+                    setCurrentUser((prev) => user || prev);
                 })
                 .catch(err => console.error('[AppUser] Sync failed:', err));
             loadServers();
@@ -782,20 +786,10 @@ export default function App() {
 
 
 
-                    <div className="user-bar">
-                        <div className="user-avatar-container">
-                            {auth.user?.profile.picture ? (
-                                <img src={auth.user.profile.picture} alt="Avatar" className="user-avatar-img" />
-                            ) : (
-                                <div className="user-avatar-placeholder" />
-                            )}
-                            <div className="status-indicator online" />
-                        </div>
-                        <div className="user-info">
-                            <div className="username">{auth.user?.profile.preferred_username}</div>
-                            <div className="status-text">Online</div>
-                        </div>
-                    </div>
+                    <UserBar
+                        currentUser={currentUser}
+                        onOpenSettings={() => setShowSettingsModal(true)}
+                    />
                 </div>
             ) : (
                 !['friends', 'dms', 'analytics'].includes(viewMode) && (
@@ -813,6 +807,8 @@ export default function App() {
                     onStartDM={handleStartDM}
                     onStartCall={handleStartCall}
                     notificationTrigger={friendNotificationTrigger}
+                    currentUser={currentUser}
+                    onOpenSettings={() => setShowSettingsModal(true)}
                 />
             )}
 
@@ -828,6 +824,8 @@ export default function App() {
                     }}
                     unreadCounts={unreadCounts}
                     fetchUnreadCounts={fetchUnreadCounts}
+                    currentUser={currentUser}
+                    onOpenSettings={() => setShowSettingsModal(true)}
                 />
             )}
 
@@ -901,7 +899,19 @@ export default function App() {
                                     const revealed = revealedToxicIds.has(msg.id);
                                     return (
                                         <div key={msg.id} className={`message-item ${toxic ? 'message-toxic' : ''}`}>
-                                            <div className="message-avatar" />
+                                            <div className="message-avatar">
+                                                {(() => {
+                                                    const sender = members.find(m => m.userId === msg.senderId);
+                                                    const avatarUrl = sender?.avatarUrl;
+                                                    return avatarUrl ? (
+                                                        <img src={avatarUrl} alt={msg.senderUsername} className="user-avatar-img" />
+                                                    ) : (
+                                                        <div className="user-avatar-placeholder">
+                                                            {(msg.senderUsername || "?").substring(0, 2).toUpperCase()}
+                                                        </div>
+                                                    );
+                                                })()}
+                                            </div>
                                             <div className="message-content">
                                                 <div className="message-header">
                                                     <span className="author">
@@ -959,7 +969,19 @@ export default function App() {
                                 const revealed = revealedToxicIds.has(msg.id);
                                 return (
                                     <div key={msg.id} className={`message-item ${toxic ? 'message-toxic' : ''}`}>
-                                        <div className="message-avatar" />
+                                        <div className="message-avatar">
+                                            {(() => {
+                                                const sender = members.find(m => m.userId === msg.senderId);
+                                                const avatarUrl = sender?.avatarUrl;
+                                                return avatarUrl ? (
+                                                    <img src={avatarUrl} alt={msg.senderUsername} className="user-avatar-img" />
+                                                ) : (
+                                                    <div className="user-avatar-placeholder">
+                                                        {(msg.senderUsername || "?").substring(0, 2).toUpperCase()}
+                                                    </div>
+                                                );
+                                            })()}
+                                        </div>
                                         <div className="message-content">
                                             <div className="message-header">
                                                 <span className="author">
@@ -1011,7 +1033,15 @@ export default function App() {
                     <h3>CZŁONKOWIE — {members.length}</h3>
                     {members.map((m, i) => (
                         <div key={i} className="member-item">
-                            <div className="message-avatar small" />
+                            <div className="message-avatar small">
+                                {m.avatarUrl ? (
+                                    <img src={m.avatarUrl} alt={m.username} className="user-avatar-img" />
+                                ) : (
+                                    <div className="user-avatar-placeholder small">
+                                        {(m.displayName || m.username || "?").substring(0, 2).toUpperCase()}
+                                    </div>
+                                )}
+                            </div>
                             <div className="member-info">
                                 <span className="member-name">{m.username}</span>
                                 <span className={`member-role-badge ${m.role === 'OWNER' ? 'role-owner' : 'role-member'}`}>
@@ -1199,6 +1229,18 @@ export default function App() {
                 </div>
             )}
             <ToastContainer toasts={toasts} onRemove={removeToast} />
+
+            {showSettingsModal && currentUser && (
+                <UserSettingsModal
+                    currentUser={currentUser}
+                    onClose={() => setShowSettingsModal(false)}
+                    onUpdate={(updatedUser) => {
+                        setCurrentUser(prev => ({ ...prev, ...updatedUser }));
+                        setShowSettingsModal(false);
+                        showToast('Profil zaktualizowany', 'success');
+                    }}
+                />
+            )}
 
         </div>
     );

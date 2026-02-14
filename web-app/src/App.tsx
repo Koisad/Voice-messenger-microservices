@@ -354,6 +354,9 @@ export default function App() {
                 }
                 return prev;
             });
+
+            // Trigger refetch of friends / DMs lists
+            setFriendNotificationTrigger(prev => prev + 1);
         }
     });
 
@@ -374,7 +377,8 @@ export default function App() {
 
     // Helper for voice connection
     const connectToVoiceChannel = (channelId: string) => {
-        api.getLiveKitToken(channelId)
+        const displayName = currentUser?.displayName || auth.user?.profile.preferred_username || "User";
+        api.getLiveKitToken(channelId, displayName)
             .then(data => {
                 setLiveKitToken(data.token);
                 setLiveKitUrl(data.serverUrl);
@@ -382,6 +386,26 @@ export default function App() {
             })
             .catch(err => console.error("Błąd LiveKit:", err));
     };
+
+    // ... (lines 389-688 skipped)
+
+    {/* Servers */ }
+    {
+        servers.map(server => (
+            <div
+                key={server.id}
+                className={`server-icon ${viewMode === 'servers' && selectedServerId === server.id ? 'active' : ''}`}
+                onClick={() => {
+                    setViewMode('servers');
+                    setSelectedServerId(server.id);
+                    selectDefaultChannels(server);
+                }}
+                title={server.name}
+            >
+                {(server.name || "?").substring(0, 1).toUpperCase()}
+            </div>
+        ))
+    }
 
     // 2. Obsługa zmiany kanału (Tekst vs Głos)
     useEffect(() => {
@@ -863,6 +887,7 @@ export default function App() {
                     fetchUnreadCounts={fetchUnreadCounts}
                     currentUser={currentUser}
                     onOpenSettings={() => setShowSettingsModal(true)}
+                    notificationTrigger={friendNotificationTrigger}
                 />
             )}
 
@@ -1014,7 +1039,7 @@ export default function App() {
                                                     <img src={avatarUrl} alt={msg.senderUsername} className="user-avatar-img" />
                                                 ) : (
                                                     <div className="user-avatar-placeholder">
-                                                        {(msg.senderUsername || "?").substring(0, 2).toUpperCase()}
+                                                        {(msg.senderUsername || "?").substring(0, 1).toUpperCase()}
                                                     </div>
                                                 );
                                             })()}

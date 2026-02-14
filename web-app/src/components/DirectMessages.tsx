@@ -15,6 +15,7 @@ interface DirectMessagesProps {
     onChannelSelect?: (channelId: string | null) => void;
     unreadCounts?: Record<string, number>;
     fetchUnreadCounts?: (channelIds: string[], ignoreChannelId?: string) => Promise<void>;
+    notificationTrigger?: number;
     currentUser: any;
     onOpenSettings: () => void;
 }
@@ -29,8 +30,24 @@ export const DirectMessages: React.FC<DirectMessagesProps> = ({
     unreadCounts = {},
     fetchUnreadCounts,
     currentUser,
-    onOpenSettings
+    onOpenSettings,
+    notificationTrigger
 }) => {
+    // ... (rest of imports/state)
+
+    // Reload when notification trigger changes
+    useEffect(() => {
+        if (notificationTrigger !== undefined && notificationTrigger > 0) {
+            loadFriends();
+        }
+    }, [notificationTrigger]);
+
+    // ... (rest of code)
+
+    // Update avatar rendering in the list (around line 225 usually)
+    // I need to find the specific block for avatar rendering in DirectMessages to replace it.
+    // Since I don't have the full file content in view, I'll stick to adding the prop and useEffect first.
+    // refined avatar logic will be done in a separate step after locating it.
     // Extend Friendship with channelId
     type FriendWithChannel = Friendship & { channelId?: string };
     const [friends, setFriends] = useState<FriendWithChannel[]>([]);
@@ -196,7 +213,21 @@ export const DirectMessages: React.FC<DirectMessagesProps> = ({
                         const revealed = revealedToxicIds.has(msg.id);
                         return (
                             <div key={msg.id} className={`message-item ${toxic ? 'message-toxic' : ''}`}>
-                                <div className="message-avatar" />
+                                <div className="message-avatar">
+                                    {(() => {
+                                        // Assuming no avatar URL for simplicity in this view, or add logic if needed
+                                        // Wait, existing code was empty div: <div className="message-avatar" />
+                                        // I should implement the placeholder logic here.
+                                        // The previous code had empty div, which is wrong?
+                                        // Ah, line 216 in view step 2189 shows: <div className="message-avatar" />
+                                        // I need to add the avatar logic here.
+                                        return (
+                                            <div className="user-avatar-placeholder">
+                                                {(msg.senderUsername || "?").substring(0, 1).toUpperCase()}
+                                            </div>
+                                        );
+                                    })()}
+                                </div>
                                 <div className="message-content">
                                     <div className="message-header">
                                         <span className="author">

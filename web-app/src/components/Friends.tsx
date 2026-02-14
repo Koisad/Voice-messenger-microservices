@@ -191,7 +191,7 @@ export const Friends: React.FC<FriendsProps> = ({ currentUserId, onStartDM, onSt
                                         <img src={user.avatarUrl} alt={user.username} className="user-avatar-img" />
                                     ) : (
                                         <div className="user-avatar-placeholder">
-                                            {(user.displayName || user.username || "?").substring(0, 2).toUpperCase()}
+                                            {(user.displayName || user.username || "?").substring(0, 1).toUpperCase()}
                                         </div>
                                     )}
                                 </div>
@@ -241,7 +241,7 @@ export const Friends: React.FC<FriendsProps> = ({ currentUserId, onStartDM, onSt
                                             <img src={friendship.friendAvatarUrl} alt={friendship.friendUsername} className="user-avatar-img" />
                                         ) : (
                                             <div className="user-avatar-placeholder">
-                                                {(friendship.friendDisplayName || friendship.friendUsername || "?").substring(0, 2).toUpperCase()}
+                                                {(friendship.friendDisplayName || friendship.friendUsername || "?").substring(0, 1).toUpperCase()}
                                             </div>
                                         )}
                                     </div>

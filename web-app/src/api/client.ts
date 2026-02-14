@@ -101,11 +101,11 @@ export const api = {
     },
 
     // LiveKit (Głos/Wideo)
-    getLiveKitToken: async (channelId: string): Promise<LiveKitTokenResponse> => {
+    getLiveKitToken: async (channelId: string, displayName?: string): Promise<LiveKitTokenResponse> => {
         const res = await fetch(`${BASE_URL}/media/token`, {
             method: 'POST',
             headers: getHeaders(),
-            body: JSON.stringify({ channelId })
+            body: JSON.stringify({ channelId, displayName })
         });
         if (!res.ok) throw new Error('Failed to get media token');
         return res.json();

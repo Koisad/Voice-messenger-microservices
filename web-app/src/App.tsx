@@ -36,7 +36,7 @@ export default function App() {
     const [servers, setServers] = useState<Server[]>([]);
     const [messages, setMessages] = useState<Message[]>([]);
     const [members, setMembers] = useState<MemberDTO[]>([]);
-    const [currentUser, setCurrentUser] = useState<User | null>(null);
+    const [currentUser] = useState<User | null>(null);
     const { toasts, showToast, removeToast } = useToast();
     const { unreadCounts, fetchUnreadCounts, incrementUnreadCount, markAsRead } = useUnreadMessages(currentUserId);
 
@@ -130,11 +130,31 @@ export default function App() {
     }, [selectedServerId, selectedServer, chatChannelId, fetchUnreadCounts]);
 
     // Mark as read when channel changes
+    // Mark as read when channel changes OR view mode changes (e.g. switching tabs)
     useEffect(() => {
-        if (chatChannelId) {
+        const isServerView = viewMode === 'servers';
+        if (chatChannelId && isServerView) {
             markAsRead(chatChannelId);
         }
-    }, [chatChannelId, markAsRead]);
+        return () => {
+            if (chatChannelId && isServerView) {
+                markAsRead(chatChannelId);
+            }
+        };
+    }, [chatChannelId, viewMode, markAsRead]);
+
+    // Same for DMs
+    useEffect(() => {
+        const isDMView = viewMode === 'dms';
+        if (activeDMChannelId && isDMView) {
+            markAsRead(activeDMChannelId);
+        }
+        return () => {
+            if (activeDMChannelId && isDMView) {
+                markAsRead(activeDMChannelId);
+            }
+        };
+    }, [activeDMChannelId, viewMode, markAsRead]);
 
     // --- WEBRTC CALL ---
     const webrtcCall = useWebRTCCall({
@@ -214,8 +234,6 @@ export default function App() {
                 data.senderUsername === auth.user?.profile.preferred_username ||
                 (currentUser && data.senderId === currentUser.id);
 
-            if (isSelf) return;
-
             // 2. Check if we are currently viewing this channel
             // We are viewing if viewMode is 'servers', selectedServerId matches, AND chatChannelId matches logic.
             // Note: chatChannelId is the TEXT channel. selectedChannelId usually syncs with it for text channels.
@@ -223,7 +241,24 @@ export default function App() {
                 selectedServerId === data.serverId &&
                 chatChannelId === data.channelId;
 
-            if (isViewing) return;
+            if (isSelf) {
+                if (isViewing) {
+                    // Even if it's our own message, ensure backend knows we read it up to this point
+                    markAsRead(data.channelId);
+                }
+                return;
+            }
+
+            // DEBUG: Show toast if message is from self but check failed
+            if (data.senderUsername === auth.user?.profile.preferred_username) {
+                showToast(`DEBUG: Self-message not ignored! ID: ${data.senderId}, Current: ${currentUserId}, Backend: ${currentUser?.id}`, 'error');
+            }
+
+            if (isViewing) {
+                // If we are viewing, mark as read immediately to update backend state
+                markAsRead(data.channelId);
+                return;
+            }
 
             // 3. Find channel name for better toast
             const server = servers.find(s => s.id === data.serverId);
@@ -265,7 +300,6 @@ export default function App() {
         onDMReceived: (data) => {
             // Check if we are currently viewing this DM
             const isViewing = viewMode === 'dms' && activeDMChannelId === data.channelId;
-            if (isViewing) return;
 
             // Ignore own messages for unread count
             const myId = auth.user?.profile.sub;
@@ -275,7 +309,17 @@ export default function App() {
                 data.senderName === myUsername ||
                 (currentUser && data.senderId === currentUser.id);
 
-            if (isSelf) return;
+            if (isSelf) {
+                if (isViewing && data.channelId) {
+                    markAsRead(data.channelId);
+                }
+                return;
+            }
+
+            if (isViewing) {
+                if (data.channelId) markAsRead(data.channelId);
+                return;
+            }
 
             showToast(`${data.senderName}: ${data.content}`, 'message');
             // TODO: Handle DM unread counts (requires DM channel ID management in useUnreadMessages or separate logic)
@@ -288,12 +332,12 @@ export default function App() {
     });
 
     // 1. Inicjalizacja po zalogowaniu + sync użytkownika
+    // 1. Inicjalizacja po zalogowaniu + sync użytkownika
     useEffect(() => {
         if (auth.isAuthenticated) {
             api.syncUser()
-                .then((user) => {
-                    console.log('[AppUser] Sync successful', user);
-                    setCurrentUser(user);
+                .then(() => {
+                    console.log('[AppUser] Sync completed');
                 })
                 .catch(err => console.error('[AppUser] Sync failed:', err));
             loadServers();

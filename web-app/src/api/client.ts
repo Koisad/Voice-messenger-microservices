@@ -1,4 +1,4 @@
-import type { Server, Message, CreateServerRequest, SendMessageRequest, LiveKitTokenResponse, MemberDTO, Friendship, NetworkMetric, User } from '../types';
+import type { Server, Message, CreateServerRequest, SendMessageRequest, LiveKitTokenResponse, MemberDTO, Friendship, NetworkMetric } from '../types';
 import { getUserToken } from './config';
 
 const BASE_URL = '/api';
@@ -112,13 +112,12 @@ export const api = {
     },
 
     // User Management
-    syncUser: async (): Promise<User> => {
+    syncUser: async (): Promise<void> => {
         const res = await fetch(`${BASE_URL}/users/sync`, {
             method: 'POST',
             headers: getHeaders()
         });
         if (!res.ok) throw new Error('Failed to sync user');
-        return res.json();
     },
 
     searchUsers: async (query: string): Promise<{ userId: string; username: string }[]> => {

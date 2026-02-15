@@ -1,4 +1,4 @@
-import type { Server, Message, CreateServerRequest, SendMessageRequest, LiveKitTokenResponse, MemberDTO, Friendship, NetworkMetric, User } from '../types';
+import type { Server, Message, CreateServerRequest, SendMessageRequest, LiveKitTokenResponse, MemberDTO, Friendship, NetworkMetric, User, RegisterRequestDTO } from '../types';
 import { getUserToken } from './config';
 
 const BASE_URL = '/api';
@@ -12,6 +12,48 @@ const getHeaders = () => {
 };
 
 export const api = {
+    // Auth
+    register: async (data: RegisterRequestDTO): Promise<void> => {
+        const res = await fetch(`${BASE_URL}/auth/register`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        if (!res.ok) {
+            const errorText = await res.text();
+            console.error('Registration failed:', res.status, errorText);
+            let error;
+            try {
+                error = JSON.parse(errorText);
+            } catch {
+                // If parsing fails, use status codes
+            }
+
+            if (!error || !error.message) {
+                if (res.status === 409) {
+                    error = { message: 'Użytkownik o takiej nazwie lub emailu już istnieje' };
+                } else if (res.status === 401) {
+                    error = { message: 'Brak uprawnień do rejestracji (401)' };
+                } else {
+                    error = { message: `Błąd serwera: ${res.status}` };
+                }
+            } else if (res.status === 409) {
+                // Translate specific backend messages (case-insensitive check)
+                const msg = (error.message || "").toLowerCase();
+
+                if (msg.includes('email is already taken')) {
+                    error.message = 'Ten adres email jest już zajęty';
+                } else if (msg.includes('username is already taken')) {
+                    error.message = 'Ta nazwa użytkownika jest już zajęta';
+                } else if (msg.includes('already exists')) {
+                    error.message = 'Użytkownik o takiej nazwie lub emailu już istnieje';
+                }
+            }
+
+            throw new Error(error.message || 'Registration failed');
+        }
+    },
+
     // Serwery
     getServers: async (): Promise<Server[]> => {
         const res = await fetch(`${BASE_URL}/servers`, { headers: getHeaders() });

@@ -17,6 +17,7 @@ import { Friends } from './components/Friends';
 import { DirectMessages } from './components/DirectMessages';
 import { VoiceCallModal } from './components/VoiceCallModal';
 import { LoginPage } from './components/LoginPage';
+import { RegisterPage } from './components/RegisterPage';
 import { ToastContainer } from './components/ToastContainer';
 import { useToast } from './hooks/useToast';
 import { AnalyticsDashboard } from './components/AnalyticsDashboard';
@@ -567,15 +568,53 @@ export default function App() {
         }
     };
 
-    if (auth.isLoading) return (
-        <div className="center-screen">
-            <div className="loading-spinner"></div>
-        </div>
-    );
-    if (auth.error) return <div className="center-screen">Błąd logowania: {auth.error.message}</div>;
+    const [showRegister, setShowRegister] = useState(false);
+
+    if (auth.isLoading) {
+        return (
+            <div className="loading-screen">
+                <div className="loading-spinner"></div>
+                <div>Ładowanie...</div>
+            </div>
+        );
+    }
+
+    // Check for OIDC errors in URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const errorParam = urlParams.get('error');
+    if (errorParam === 'access_denied') {
+        return (
+            <div className="center-screen">
+                <h2>Odmowa dostępu</h2>
+                <p>Nie udało się zalogować przez zewnętrznego dostawcę.</p>
+                <button className="login-btn login-btn-primary" onClick={() => {
+                    window.location.href = window.location.origin;
+                }} style={{ marginTop: 20, width: 'auto' }}>
+                    Wróć do logowania
+                </button>
+            </div>
+        );
+    }
+
+    if (auth.error) {
+        return (
+            <div className="center-screen">
+                <div>Błąd logowania: {auth.error.message}</div>
+                <button className="login-btn login-btn-primary" onClick={() => {
+                    auth.removeUser();
+                    window.location.href = window.location.origin;
+                }} style={{ marginTop: 20, width: 'auto' }}>
+                    Spróbuj ponownie
+                </button>
+            </div>
+        );
+    }
 
     if (!auth.isAuthenticated) {
-        return <LoginPage />;
+        if (showRegister) {
+            return <RegisterPage onSwitchToLogin={() => setShowRegister(false)} />;
+        }
+        return <LoginPage onRegisterClick={() => setShowRegister(true)} />;
     }
 
     const handleLogout = async () => {

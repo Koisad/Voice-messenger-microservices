@@ -20,6 +20,12 @@ spring:
           issuer-uri: ${SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI}
           jwk-set-uri: ${SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI}
 
+keycloak:
+  server-url: https://auth.voicemessenger.mywire.org
+  realm: voice-messenger
+  admin-client-id: ${KEYCLOAK_ADMIN_CLIENT_ID}
+  admin-client-secret: ${KEYCLOAK_ADMIN_CLIENT_SECRET}
+
 management:
   endpoints:
     web:

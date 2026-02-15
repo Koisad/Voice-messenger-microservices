@@ -12,6 +12,8 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestClient;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 
@@ -84,8 +86,22 @@ public class KeycloakService {
                 .retrieve()
                 .onStatus(HttpStatusCode::is4xxClientError, (request, response) -> {
                     if (response.getStatusCode().value() == 409) {
-                        log.warn("User already exists in Keycloak: {}", username);
-                        throw new UserAlreadyExistsException("User with this username or email already exists");
+                        try {
+                            String responseBody = new String(response.getBody().readAllBytes(), StandardCharsets.UTF_8);
+                            log.warn("Keycloak conflict: {}", responseBody);
+
+                            if (responseBody.contains("email")) {
+                                throw new UserAlreadyExistsException("Email is already taken", "email");
+                            }
+                            else if (responseBody.contains("username")) {
+                                throw new UserAlreadyExistsException("Username is already taken", "username");
+                            }
+
+                        } catch (IOException e) {
+                            log.error("Error reading response body", e);
+                        }
+
+                        throw new UserAlreadyExistsException("Użytkownik o takich danych już istnieje.", "general");
                     }
 
                     if (response.getStatusCode().value() == 400) {

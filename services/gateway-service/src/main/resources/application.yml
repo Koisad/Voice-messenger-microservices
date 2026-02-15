@@ -59,4 +59,8 @@ spring:
           uri: ${USER_URI}
           predicates:
             - Path=/api/friendships/**
+        - id: user-service-auth
+          uri: ${USER_URI}
+          predicates:
+            - Path=/api/auth/**
 

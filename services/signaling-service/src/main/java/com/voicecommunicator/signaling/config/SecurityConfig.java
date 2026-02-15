@@ -16,7 +16,7 @@ public class SecurityConfig {
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/ws-signaling-relay/**").permitAll()
+                        .requestMatchers("/ws/signal/**").permitAll()
                         .anyRequest().authenticated()
                 )
 

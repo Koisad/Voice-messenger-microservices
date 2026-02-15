@@ -6,6 +6,7 @@ dependencies {
     implementation ("org.springframework.boot:spring-boot-starter-websocket")
     implementation("org.springframework.boot:spring-boot-starter-amqp")
     implementation("io.projectreactor.netty:reactor-netty")
+    implementation("org.springframework.boot:spring-boot-starter-security")
 
     compileOnly("org.projectlombok:lombok")
     annotationProcessor("org.projectlombok:lombok")

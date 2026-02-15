@@ -32,35 +32,52 @@ class SoundManager {
         this.stop();
         const ctx = this.getAudioContext();
 
-        // Standard phone ring: 440Hz + 480Hz modulated
-        // We'll mimic a digital ring: simple modulation
-        const osc1 = ctx.createOscillator();
-        const osc2 = ctx.createOscillator();
+        // Modern digital ringtone: repeating pleasant pattern
+        // Pattern: High-Mid-High-Silence
+        const t = ctx.currentTime;
         const gain = ctx.createGain();
-
-        osc1.frequency.setValueAtTime(440, ctx.currentTime);
-        osc2.frequency.setValueAtTime(480, ctx.currentTime);
-
-        osc1.connect(gain);
-        osc2.connect(gain);
         gain.connect(ctx.destination);
 
-        // Ring pattern: 2s ON, 4s OFF (European style usually) or 2s ON, 3s OFF
-        // American: 2s ON, 4s OFF
-        const now = ctx.currentTime;
-        gain.gain.setValueAtTime(0, now);
+        // Loop the ringtone every 3 seconds
+        const loopDuration = 3.0;
 
-        for (let i = 0; i < 10; i++) { // Repeat 10 times
-            const start = now + i * 5; // 5 seconds cycle
-            gain.gain.setValueAtTime(0.1, start);
-            gain.gain.setValueAtTime(0.1, start + 2);
-            gain.gain.setValueAtTime(0, start + 2.1);
+        // Create a custom oscillator for a softer tone
+        const osc = ctx.createOscillator();
+        osc.type = 'sine';
+        osc.connect(gain);
+
+        // Schedule values for the first 10 cycles (30 seconds ring time)
+        for (let i = 0; i < 10; i++) {
+            const start = t + (i * loopDuration);
+
+            // Note 1: 880Hz (A5) for 0.1s
+            osc.frequency.setValueAtTime(880, start);
+            gain.gain.setValueAtTime(0, start);
+            gain.gain.linearRampToValueAtTime(0.1, start + 0.02);
+            gain.gain.setValueAtTime(0.1, start + 0.08);
+            gain.gain.linearRampToValueAtTime(0, start + 0.1);
+
+            // Note 2: 698.46Hz (F5) for 0.1s
+            osc.frequency.setValueAtTime(698.46, start + 0.15);
+            gain.gain.setValueAtTime(0, start + 0.15);
+            gain.gain.linearRampToValueAtTime(0.1, start + 0.17);
+            gain.gain.setValueAtTime(0.1, start + 0.23);
+            gain.gain.linearRampToValueAtTime(0, start + 0.25);
+
+            // Note 3: 880Hz (A5) for 0.1s
+            osc.frequency.setValueAtTime(880, start + 0.3);
+            gain.gain.setValueAtTime(0, start + 0.3);
+            gain.gain.linearRampToValueAtTime(0.1, start + 0.32);
+            gain.gain.setValueAtTime(0.1, start + 0.38);
+            gain.gain.linearRampToValueAtTime(0, start + 0.4);
+
+            // Longer silence (2.6s) handled by loop duration
         }
 
-        osc1.start();
-        osc2.start();
+        osc.start(t);
+        osc.stop(t + 30); // Stop automatically after 30s
 
-        this.oscillators.push(osc1, osc2);
+        this.oscillators.push(osc);
         this.gainNodes.push(gain);
     }
 
@@ -80,9 +97,8 @@ class SoundManager {
         osc2.connect(gain);
         gain.connect(ctx.destination);
 
-        // Europe often uses 425Hz continuous
-        // Let's use the dual tone, it's distinctive
-        gain.gain.setValueAtTime(0.1, ctx.currentTime); // Lower volume
+        // Soft, continuous tone
+        gain.gain.setValueAtTime(0.05, ctx.currentTime);
 
         osc1.start();
         osc2.start();
@@ -98,24 +114,20 @@ class SoundManager {
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
 
-        osc.frequency.setValueAtTime(480, ctx.currentTime);
-        osc.type = 'square';
+        // Descending tone: 400Hz -> 300Hz
+        osc.frequency.setValueAtTime(400, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(300, ctx.currentTime + 0.3);
 
+        osc.type = 'sine';
         osc.connect(gain);
         gain.connect(ctx.destination);
 
-        const now = ctx.currentTime;
-
-        // Three quick beeps
-        gain.gain.setValueAtTime(0.1, now);
-        gain.gain.setValueAtTime(0, now + 0.2);
-        gain.gain.setValueAtTime(0.1, now + 0.4);
-        gain.gain.setValueAtTime(0, now + 0.6);
-        gain.gain.setValueAtTime(0.1, now + 0.8);
-        gain.gain.setValueAtTime(0, now + 1.0);
+        // Quick fade out
+        gain.gain.setValueAtTime(0.1, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
 
         osc.start();
-        osc.stop(now + 1.2);
+        osc.stop(ctx.currentTime + 0.3);
 
         this.oscillators.push(osc);
         this.gainNodes.push(gain);

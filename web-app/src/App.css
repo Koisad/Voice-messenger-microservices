@@ -351,6 +351,8 @@ html,
     font-weight: 600;
     color: white;
     cursor: pointer;
+    margin-right: auto;
+    /* Push time/badges to the right */
 }
 
 .author:hover {

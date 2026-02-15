@@ -215,17 +215,6 @@ export const DirectMessages: React.FC<DirectMessagesProps> = ({
                             <div key={msg.id} className={`message-item ${toxic ? 'message-toxic' : ''}`}>
                                 <div className="message-avatar">
                                     {(() => {
-                                        // Use logic similar to main chat
-                                        const avatarUrl = currentUser?.id === msg.senderId
-                                            ? currentUser.avatarUrl
-                                            : (selectedFriend?.id === msg.senderId ? null : null); // We don't have friend's avatarUrl here easily, need to check if we can get it from friends list
-
-                                        // Better approach: We know if it's us or friend
-                                        // If us: use currentUser.avatarUrl
-                                        // If friend: check 'friend' object if we have it? We have selectedFriend (id, username).
-                                        // The 'friends' state has FriendWithChannel which might have profile info? 
-                                        // Let's check api.getFriends(). It returns Friendship which has friendAvatarUrl.
-
                                         // Let's try to find friend info from 'friends' array
                                         const friendInfo = friends.find(f => f.friendId === msg.senderId);
                                         const isMe = currentUser?.id === msg.senderId;
@@ -245,8 +234,8 @@ export const DirectMessages: React.FC<DirectMessagesProps> = ({
                                         <span className="author">
                                             {msg.senderUsername || (msg.senderId.length > 20 ? msg.senderId.substring(0, 8) + '...' : msg.senderId)}
                                         </span>
-                                        <span className="time">{new Date(msg.timestamp).toLocaleTimeString()}</span>
                                         {toxic && <span className="toxic-badge"><AlertTriangle size={14} /> Potencjalnie wulgarna</span>}
+                                        <span className="time">{new Date(msg.timestamp).toLocaleTimeString()}</span>
                                     </div>
                                     {toxic && !revealed ? (
                                         <div className="toxic-hidden-content">

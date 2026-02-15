@@ -855,8 +855,16 @@ export default function App() {
                 </div>
             ) : (
                 !['friends', 'dms', 'analytics'].includes(viewMode) && (
-                    <div className="channel-sidebar placeholder">
-                        <p>Wybierz serwer</p>
+                    <div className="channel-sidebar placeholder" style={{ display: 'flex', flexDirection: 'column' }}>
+                        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <p>Wybierz serwer</p>
+                        </div>
+                        <div style={{ width: '100%' }}>
+                            <UserBar
+                                currentUser={currentUser}
+                                onOpenSettings={() => setShowSettingsModal(true)}
+                            />
+                        </div>
                     </div>
                 )
             )}
@@ -906,12 +914,6 @@ export default function App() {
                             <p>Wybierz serwer z lewej strony lub stwórz nowy.</p>
                         </div>
 
-                        <div style={{ position: 'absolute', bottom: 0, left: 0, width: '240px' }}>
-                            <UserBar
-                                currentUser={currentUser}
-                                onOpenSettings={() => setShowSettingsModal(true)}
-                            />
-                        </div>
                     </div>
                 ) : selectedChannel?.type === 'VOICE' && !isVoiceActive ? (
                     <div className="welcome">
@@ -1063,15 +1065,10 @@ export default function App() {
                                         <div className="message-content">
                                             <div className="message-header">
                                                 <span className="author">
-                                                    {(() => {
-                                                        const member = members.find(m => m.userId === msg.senderId);
-                                                        const isMe = currentUser?.id === msg.senderId;
-                                                        const name = member?.displayName || (isMe ? currentUser?.displayName : null) || msg.senderUsername || (msg.senderId.length > 20 ? msg.senderId.substring(0, 8) + '...' : msg.senderId);
-                                                        return name;
-                                                    })()}
+                                                    {msg.senderUsername || (msg.senderId.length > 20 ? msg.senderId.substring(0, 8) + '...' : msg.senderId)}
                                                 </span>
-                                                <span className="time">{new Date(msg.timestamp).toLocaleTimeString()}</span>
                                                 {toxic && <span className="toxic-badge"><AlertTriangle size={14} /> Potencjalnie wulgarna</span>}
+                                                <span className="time">{new Date(msg.timestamp).toLocaleTimeString()}</span>
                                             </div>
                                             {toxic && !revealed ? (
                                                 <div className="toxic-hidden-content">
@@ -1108,8 +1105,9 @@ export default function App() {
                             </div>
                         </form>
                     </div>
-                )}
-            </main>
+                )
+                }
+            </main >
 
             {selectedServer && !isVoiceActive && viewMode === 'servers' && (
                 <aside className="members-sidebar">
@@ -1145,42 +1143,44 @@ export default function App() {
                 </aside>
             )}
 
-            {showModal && (
-                <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setShowModal(false) }}>
-                    <div className="modal-content">
-                        <div className="modal-tabs">
-                            <button
-                                className={modalMode === 'CREATE' ? 'active' : ''}
-                                onClick={() => setModalMode('CREATE')}
-                            >
-                                Stwórz Serwer
-                            </button>
-                            <button
-                                className={modalMode === 'JOIN' ? 'active' : ''}
-                                onClick={() => setModalMode('JOIN')}
-                            >
-                                Dołącz do Serwera
-                            </button>
-                        </div>
+            {
+                showModal && (
+                    <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setShowModal(false) }}>
+                        <div className="modal-content">
+                            <div className="modal-tabs">
+                                <button
+                                    className={modalMode === 'CREATE' ? 'active' : ''}
+                                    onClick={() => setModalMode('CREATE')}
+                                >
+                                    Stwórz Serwer
+                                </button>
+                                <button
+                                    className={modalMode === 'JOIN' ? 'active' : ''}
+                                    onClick={() => setModalMode('JOIN')}
+                                >
+                                    Dołącz do Serwera
+                                </button>
+                            </div>
 
-                        <form onSubmit={handleModalSubmit}>
-                            <label>
-                                {modalMode === 'CREATE' ? 'NAZWA SERWERA' : 'ID SERWERA (ZAPROSZENIE)'}
-                            </label>
-                            <input
-                                className="input-field"
-                                value={inputVal}
-                                onChange={(e) => setInputVal(e.target.value)}
-                                autoFocus
-                                placeholder={modalMode === 'CREATE' ? 'Np. Gaming Room' : 'Wklej ID tutaj...'}
-                            />
-                            <button type="submit" className="btn btn-primary w-full" style={{ marginTop: 20 }}>
-                                {modalMode === 'CREATE' ? 'Utwórz' : 'Dołącz'}
-                            </button>
-                        </form>
+                            <form onSubmit={handleModalSubmit}>
+                                <label>
+                                    {modalMode === 'CREATE' ? 'NAZWA SERWERA' : 'ID SERWERA (ZAPROSZENIE)'}
+                                </label>
+                                <input
+                                    className="input-field"
+                                    value={inputVal}
+                                    onChange={(e) => setInputVal(e.target.value)}
+                                    autoFocus
+                                    placeholder={modalMode === 'CREATE' ? 'Np. Gaming Room' : 'Wklej ID tutaj...'}
+                                />
+                                <button type="submit" className="btn btn-primary w-full" style={{ marginTop: 20 }}>
+                                    {modalMode === 'CREATE' ? 'Utwórz' : 'Dołącz'}
+                                </button>
+                            </form>
+                        </div>
                     </div>
-                </div>
-            )}
+                )
+            }
 
             {/* Voice Call Modal */}
             <VoiceCallModal
@@ -1200,132 +1200,144 @@ export default function App() {
                 onEnd={webrtcCall.endCall}
             />
 
-            {showLogoutConfirm && (
-                <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setShowLogoutConfirm(false); }}>
-                    <div className="logout-modal">
-                        <div className="logout-modal-icon">
-                            <LogOut size={32} />
-                        </div>
-                        <h2>Wylogować się?</h2>
-                        <p>Czy na pewno chcesz się wylogować z Voice Messenger?</p>
-                        <div className="logout-modal-actions">
-                            <button className="btn logout-modal-cancel" onClick={() => setShowLogoutConfirm(false)}>
-                                Anuluj
-                            </button>
-                            <button className="btn logout-modal-confirm" onClick={handleLogout}>
-                                Wyloguj
-                            </button>
+            {
+                showLogoutConfirm && (
+                    <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setShowLogoutConfirm(false); }}>
+                        <div className="logout-modal">
+                            <div className="logout-modal-icon">
+                                <LogOut size={32} />
+                            </div>
+                            <h2>Wylogować się?</h2>
+                            <p>Czy na pewno chcesz się wylogować z Voice Messenger?</p>
+                            <div className="logout-modal-actions">
+                                <button className="btn logout-modal-cancel" onClick={() => setShowLogoutConfirm(false)}>
+                                    Anuluj
+                                </button>
+                                <button className="btn logout-modal-confirm" onClick={handleLogout}>
+                                    Wyloguj
+                                </button>
+                            </div>
                         </div>
                     </div>
-                </div>
-            )}
+                )
+            }
 
-            {kickTarget && (
-                <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setKickTarget(null); }}>
-                    <div className="logout-modal">
-                        <div className="logout-modal-icon" style={{ background: 'rgba(237, 66, 69, 0.12)' }}>
-                            <UserX size={32} />
-                        </div>
-                        <h2>Wyrzucić użytkownika?</h2>
-                        <p>Czy na pewno chcesz wyrzucić <strong>{kickTarget.username}</strong> z serwera?</p>
-                        <div className="logout-modal-actions">
-                            <button className="btn logout-modal-cancel" onClick={() => setKickTarget(null)}>
-                                Anuluj
-                            </button>
-                            <button className="btn logout-modal-confirm" onClick={handleKickMember}>
-                                Wyrzuć
-                            </button>
+            {
+                kickTarget && (
+                    <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setKickTarget(null); }}>
+                        <div className="logout-modal">
+                            <div className="logout-modal-icon" style={{ background: 'rgba(237, 66, 69, 0.12)' }}>
+                                <UserX size={32} />
+                            </div>
+                            <h2>Wyrzucić użytkownika?</h2>
+                            <p>Czy na pewno chcesz wyrzucić <strong>{kickTarget.username}</strong> z serwera?</p>
+                            <div className="logout-modal-actions">
+                                <button className="btn logout-modal-cancel" onClick={() => setKickTarget(null)}>
+                                    Anuluj
+                                </button>
+                                <button className="btn logout-modal-confirm" onClick={handleKickMember}>
+                                    Wyrzuć
+                                </button>
+                            </div>
                         </div>
                     </div>
-                </div>
-            )}
+                )
+            }
 
-            {showLeaveConfirm && (
-                <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setShowLeaveConfirm(false); }}>
-                    <div className="logout-modal">
-                        <div className="logout-modal-icon" style={{ background: 'rgba(237, 66, 69, 0.12)' }}>
-                            <DoorOpen size={32} />
-                        </div>
-                        <h2>Opuścić serwer?</h2>
-                        <p>Czy na pewno chcesz opuścić serwer <strong>{selectedServer?.name}</strong>?</p>
-                        <div className="logout-modal-actions">
-                            <button className="btn logout-modal-cancel" onClick={() => setShowLeaveConfirm(false)}>
-                                Anuluj
-                            </button>
-                            <button className="btn logout-modal-confirm" onClick={handleLeaveServer}>
-                                Opuść
-                            </button>
+            {
+                showLeaveConfirm && (
+                    <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setShowLeaveConfirm(false); }}>
+                        <div className="logout-modal">
+                            <div className="logout-modal-icon" style={{ background: 'rgba(237, 66, 69, 0.12)' }}>
+                                <DoorOpen size={32} />
+                            </div>
+                            <h2>Opuścić serwer?</h2>
+                            <p>Czy na pewno chcesz opuścić serwer <strong>{selectedServer?.name}</strong>?</p>
+                            <div className="logout-modal-actions">
+                                <button className="btn logout-modal-cancel" onClick={() => setShowLeaveConfirm(false)}>
+                                    Anuluj
+                                </button>
+                                <button className="btn logout-modal-confirm" onClick={handleLeaveServer}>
+                                    Opuść
+                                </button>
+                            </div>
                         </div>
                     </div>
-                </div>
-            )}
+                )
+            }
 
-            {showDeleteConfirm && (
-                <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) { setShowDeleteConfirm(false); setDeleteConfirmInput(''); } }}>
-                    <div className="logout-modal">
-                        <div className="logout-modal-icon" style={{ background: 'rgba(237, 66, 69, 0.12)' }}>
-                            <Trash2 size={32} />
-                        </div>
-                        <h2>Usunąć serwer?</h2>
-                        <p>Tej operacji <strong>nie można cofnąć</strong>. Wszystkie kanały i wiadomości zostaną usunięte.</p>
-                        <p className="delete-confirm-hint">Wpisz <strong>{selectedServer?.name}</strong> aby potwierdzić:</p>
-                        <input
-                            className="input-field delete-confirm-input"
-                            value={deleteConfirmInput}
-                            onChange={(e) => setDeleteConfirmInput(e.target.value)}
-                            placeholder={selectedServer?.name}
-                            autoFocus
-                        />
-                        <div className="logout-modal-actions">
-                            <button className="btn logout-modal-cancel" onClick={() => { setShowDeleteConfirm(false); setDeleteConfirmInput(''); }}>
-                                Anuluj
-                            </button>
-                            <button
-                                className="btn logout-modal-confirm"
-                                onClick={handleDeleteServer}
-                                disabled={deleteConfirmInput !== selectedServer?.name}
-                            >
-                                Usuń
-                            </button>
+            {
+                showDeleteConfirm && (
+                    <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) { setShowDeleteConfirm(false); setDeleteConfirmInput(''); } }}>
+                        <div className="logout-modal">
+                            <div className="logout-modal-icon" style={{ background: 'rgba(237, 66, 69, 0.12)' }}>
+                                <Trash2 size={32} />
+                            </div>
+                            <h2>Usunąć serwer?</h2>
+                            <p>Tej operacji <strong>nie można cofnąć</strong>. Wszystkie kanały i wiadomości zostaną usunięte.</p>
+                            <p className="delete-confirm-hint">Wpisz <strong>{selectedServer?.name}</strong> aby potwierdzić:</p>
+                            <input
+                                className="input-field delete-confirm-input"
+                                value={deleteConfirmInput}
+                                onChange={(e) => setDeleteConfirmInput(e.target.value)}
+                                placeholder={selectedServer?.name}
+                                autoFocus
+                            />
+                            <div className="logout-modal-actions">
+                                <button className="btn logout-modal-cancel" onClick={() => { setShowDeleteConfirm(false); setDeleteConfirmInput(''); }}>
+                                    Anuluj
+                                </button>
+                                <button
+                                    className="btn logout-modal-confirm"
+                                    onClick={handleDeleteServer}
+                                    disabled={deleteConfirmInput !== selectedServer?.name}
+                                >
+                                    Usuń
+                                </button>
+                            </div>
                         </div>
                     </div>
-                </div>
-            )}
+                )
+            }
 
-            {channelToDelete && (
-                <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setChannelToDelete(null); }}>
-                    <div className="logout-modal">
-                        <div className="logout-modal-icon" style={{ background: 'rgba(237, 66, 69, 0.12)' }}>
-                            <Trash2 size={32} />
-                        </div>
-                        <h2>Usunąć kanał?</h2>
-                        <p>Czy na pewno chcesz usunąć kanał <strong>#{channelToDelete.name}</strong>? Tej operacji nie można cofnąć.</p>
-                        <div className="logout-modal-actions">
-                            <button className="btn logout-modal-cancel" onClick={() => setChannelToDelete(null)}>
-                                Anuluj
-                            </button>
-                            <button className="btn logout-modal-confirm" onClick={handleRemoveChannel}>
-                                Usuń
-                            </button>
+            {
+                channelToDelete && (
+                    <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setChannelToDelete(null); }}>
+                        <div className="logout-modal">
+                            <div className="logout-modal-icon" style={{ background: 'rgba(237, 66, 69, 0.12)' }}>
+                                <Trash2 size={32} />
+                            </div>
+                            <h2>Usunąć kanał?</h2>
+                            <p>Czy na pewno chcesz usunąć kanał <strong>#{channelToDelete.name}</strong>? Tej operacji nie można cofnąć.</p>
+                            <div className="logout-modal-actions">
+                                <button className="btn logout-modal-cancel" onClick={() => setChannelToDelete(null)}>
+                                    Anuluj
+                                </button>
+                                <button className="btn logout-modal-confirm" onClick={handleRemoveChannel}>
+                                    Usuń
+                                </button>
+                            </div>
                         </div>
                     </div>
-                </div>
-            )}
+                )
+            }
             <ToastContainer toasts={toasts} onRemove={removeToast} />
 
-            {showSettingsModal && currentUser && (
-                <UserSettingsModal
-                    currentUser={currentUser}
-                    onClose={() => setShowSettingsModal(false)}
-                    onUpdate={(updatedUser) => {
-                        setCurrentUser(prev => ({ ...prev, ...updatedUser }));
-                        setShowSettingsModal(false);
-                        showToast('Profil zaktualizowany', 'success');
-                    }}
-                    onShowToast={showToast}
-                />
-            )}
+            {
+                showSettingsModal && currentUser && (
+                    <UserSettingsModal
+                        currentUser={currentUser}
+                        onClose={() => setShowSettingsModal(false)}
+                        onUpdate={(updatedUser) => {
+                            setCurrentUser(prev => ({ ...prev, ...updatedUser }));
+                            setShowSettingsModal(false);
+                            showToast('Profil zaktualizowany', 'success');
+                        }}
+                        onShowToast={showToast}
+                    />
+                )
+            }
 
-        </div>
+        </div >
     );
 }

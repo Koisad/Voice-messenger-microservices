@@ -38,10 +38,12 @@ export const api = {
                     error = { message: `Błąd serwera: ${res.status}` };
                 }
             } else if (res.status === 409) {
-                // Overwrite backend message if it's generic, or use it if specific
-                // Spring default 'message' might be "User with this username..."
-                // let's translate common English messages to Polish if needed
-                if (error.message.includes('already exists')) {
+                // Translate specific backend messages
+                if (error.message.includes('Email is already taken')) {
+                    error.message = 'Ten adres email jest już zajęty';
+                } else if (error.message.includes('Username is already taken')) {
+                    error.message = 'Ta nazwa użytkownika jest już zajęta';
+                } else if (error.message.includes('already exists')) {
                     error.message = 'Użytkownik o takiej nazwie lub emailu już istnieje';
                 }
             }

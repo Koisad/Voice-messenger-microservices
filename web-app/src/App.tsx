@@ -8,7 +8,7 @@ import '@livekit/components-styles';
 import { api } from './api/client';
 import type { Server, Message, MemberDTO, User } from './types';
 import './App.css';
-import { Hash, Volume2, Plus, LogOut, Copy, Users, MessageCircle, AlertTriangle, Eye, EyeOff, Trash2, UserX, DoorOpen, BarChart3 } from 'lucide-react';
+import { Hash, Volume2, Plus, LogOut, Copy, Users, MessageCircle, AlertTriangle, Eye, EyeOff, Trash2, UserX, DoorOpen, BarChart3, UserPlus } from 'lucide-react';
 import { useChatSocket } from './hooks/useChatSocket';
 import { useWebRTCCall } from './hooks/useWebRTCCall';
 import { useServerNotifications } from './hooks/useServerNotifications';
@@ -25,6 +25,8 @@ import { ServerAnalyticsPanel } from './components/ServerAnalyticsPanel';
 import { useAnalyticsReporter } from './hooks/useAnalyticsReporter';
 import { CustomVideoConference } from './components/CustomVideoConference';
 import { useUnreadMessages } from './hooks/useUnreadMessages';
+import { InviteFriendsModal } from './components/InviteFriendsModal';
+
 
 // Wrapper component — must be inside <LiveKitRoom> to access Room context
 function AnalyticsReporterInRoom({ roomId, mediaServerUrl, userToken }: { roomId: string | null; mediaServerUrl: string; userToken?: string }) {
@@ -627,9 +629,28 @@ export default function App() {
 
     const isServerOwner = selectedServer?.ownerId === currentUserId;
 
+    // --- INVITE SYSTEM ---
+    const [showInviteModal, setShowInviteModal] = useState(false);
+
+    // Check for ?joinServer=SERVER_ID
+    useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        const joinServerId = params.get('joinServer');
+        if (joinServerId && auth.isAuthenticated) {
+            // Auto-open join modal or try to join
+            // Using the existing modal logic:
+            setModalMode('JOIN');
+            setInputVal(joinServerId);
+            setShowModal(true);
+            // Optionally clear the URL param to avoid reopening on refresh
+            window.history.replaceState({}, document.title, window.location.pathname);
+        }
+    }, [auth.isAuthenticated]);
+
     const handleAddChannel = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!newChannelName.trim() || !selectedServerId) return;
+
         try {
             await api.addChannel(selectedServerId, newChannelName.trim(), newChannelType);
             const updatedServers = await api.getServers();
@@ -791,6 +812,13 @@ export default function App() {
                                 : selectedServer.name}
                         </span>
                         <div className="server-header-actions">
+                            <div
+                                className="icon-btn"
+                                onClick={() => setShowInviteModal(true)}
+                                title="Zaproś znajomych"
+                            >
+                                <UserPlus size={18} />
+                            </div>
                             <div
                                 className="icon-btn"
                                 onClick={copyInvite}
@@ -1462,6 +1490,13 @@ export default function App() {
                 )
             }
 
+            {showInviteModal && selectedServerId && selectedServer && (
+                <InviteFriendsModal
+                    serverName={selectedServer.name}
+                    serverId={selectedServerId}
+                    onClose={() => setShowInviteModal(false)}
+                />
+            )}
         </div >
     );
 }

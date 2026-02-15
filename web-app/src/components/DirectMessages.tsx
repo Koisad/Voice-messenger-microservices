@@ -290,7 +290,11 @@ export const DirectMessages: React.FC<DirectMessagesProps> = ({
                                                 });
                                             }}
                                         >
-                                            {msg.senderUsername || (msg.senderId.length > 20 ? msg.senderId.substring(0, 8) + '...' : msg.senderId)}
+                                            {(() => {
+                                                const friendInfo = friends.find(f => f.friendId === msg.senderId);
+                                                const isMe = currentUser?.id === msg.senderId;
+                                                return isMe ? (currentUser?.displayName || currentUser?.username || msg.senderUsername) : (friendInfo?.friendDisplayName || msg.senderUsername || (msg.senderId.length > 20 ? msg.senderId.substring(0, 8) + '...' : msg.senderId));
+                                            })()}
                                         </span>
                                         {toxic && <span className="toxic-badge"><AlertTriangle size={14} /> Potencjalnie wulgarna</span>}
                                         <span className="time">{new Date(msg.timestamp).toLocaleTimeString()}</span>

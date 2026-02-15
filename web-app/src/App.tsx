@@ -1026,9 +1026,7 @@ export default function App() {
                                                         {(() => {
                                                             const member = members.find(m => m.userId === msg.senderId);
                                                             const isMe = currentUser?.id === msg.senderId;
-                                                            // Logic copied from main chat to ensure consistency
-                                                            const name = member?.displayName || (isMe ? currentUser?.displayName : null) || msg.senderUsername || (msg.senderId.length > 20 ? msg.senderId.substring(0, 8) + '...' : msg.senderId);
-                                                            return name;
+                                                            return member?.displayName || (isMe ? currentUser?.displayName : null) || msg.senderUsername || (msg.senderId.length > 20 ? msg.senderId.substring(0, 8) + '...' : msg.senderId);
                                                         })()}
                                                     </span>
                                                     <span className="time">{new Date(msg.timestamp).toLocaleTimeString()}</span>
@@ -1129,7 +1127,11 @@ export default function App() {
                                                         });
                                                     }}
                                                 >
-                                                    {msg.senderUsername || (msg.senderId.length > 20 ? msg.senderId.substring(0, 8) + '...' : msg.senderId)}
+                                                    {(() => {
+                                                        const sender = members.find(m => m.userId === msg.senderId);
+                                                        const isMe = currentUser?.id === msg.senderId;
+                                                        return sender?.displayName || (isMe ? currentUser?.displayName : null) || msg.senderUsername || (msg.senderId.length > 20 ? msg.senderId.substring(0, 8) + '...' : msg.senderId);
+                                                    })()}
                                                 </span>
                                                 {toxic && <span className="toxic-badge"><AlertTriangle size={14} /> Potencjalnie wulgarna</span>}
                                                 <span className="time">{new Date(msg.timestamp).toLocaleTimeString()}</span>

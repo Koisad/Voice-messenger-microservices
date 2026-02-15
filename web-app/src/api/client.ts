@@ -38,12 +38,14 @@ export const api = {
                     error = { message: `Błąd serwera: ${res.status}` };
                 }
             } else if (res.status === 409) {
-                // Translate specific backend messages
-                if (error.message.includes('Email is already taken')) {
+                // Translate specific backend messages (case-insensitive check)
+                const msg = (error.message || "").toLowerCase();
+
+                if (msg.includes('email is already taken')) {
                     error.message = 'Ten adres email jest już zajęty';
-                } else if (error.message.includes('Username is already taken')) {
+                } else if (msg.includes('username is already taken')) {
                     error.message = 'Ta nazwa użytkownika jest już zajęta';
-                } else if (error.message.includes('already exists')) {
+                } else if (msg.includes('already exists')) {
                     error.message = 'Użytkownik o takiej nazwie lub emailu już istnieje';
                 }
             }

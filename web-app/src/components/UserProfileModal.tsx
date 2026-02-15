@@ -40,23 +40,20 @@ export function UserProfileModal({ user, onClose }: UserProfileModalProps) {
                             </div>
                         )}
                     </div>
+
+                    {/* Main Name Display */}
+                    <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#fff' }}>
+                        {user.displayName || user.username}
+                    </div>
+
+                    {/* Username Display (if different or just as subtext) */}
+                    <div style={{ fontSize: '16px', color: '#b9bbbe' }}>
+                        {user.username}
+                    </div>
                 </div>
 
                 <div className="form-group" style={{ marginBottom: '15px' }}>
-                    <label style={{ display: 'block', marginBottom: '8px', color: '#b9bbbe', fontSize: '12px', fontWeight: 600, textTransform: 'uppercase' }}>
-                        Nazwa wyświetlana
-                    </label>
-                    <div style={{
-                        width: '100%',
-                        padding: '10px',
-                        background: '#202225',
-                        border: '1px solid #202225',
-                        borderRadius: '4px',
-                        color: '#dcddde',
-                        fontSize: '16px'
-                    }}>
-                        {user.displayName || user.username}
-                    </div>
+                    {/* Removed Redundant Display Name Field */}
                 </div>
 
                 <div className="form-group" style={{ marginBottom: '15px' }}>

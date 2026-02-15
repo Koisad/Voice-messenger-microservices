@@ -30,15 +30,27 @@ export const VoiceCallModal: React.FC<VoiceCallModalProps> = ({
     const audioRef = useRef<HTMLAudioElement>(null);
     const timerRef = useRef<number | null>(null);
 
+    const tryPlayAudio = React.useCallback(() => {
+        if (audioRef.current && audioRef.current.srcObject) {
+            audioRef.current.play().catch(err => {
+                console.warn('[VoiceCallModal] Audio play deferred (will retry on user gesture):', err.message);
+            });
+        }
+    }, []);
+
     useEffect(() => {
         if (remoteStream && audioRef.current) {
             audioRef.current.srcObject = remoteStream;
-            // Explicitly attempt to play
-            audioRef.current.play().catch(err => {
-                console.error('[VoiceCallModal] Failed to play audio:', err);
-            });
+            tryPlayAudio();
         }
-    }, [remoteStream]);
+    }, [remoteStream, tryPlayAudio]);
+
+    // Retry play when call becomes connected (status change often follows user gesture)
+    useEffect(() => {
+        if (status === 'connected') {
+            tryPlayAudio();
+        }
+    }, [status, tryPlayAudio]);
 
     useEffect(() => {
         if (status === 'connected') {
@@ -104,7 +116,7 @@ export const VoiceCallModal: React.FC<VoiceCallModalProps> = ({
                 <div className="call-actions">
                     {status === 'ringing' ? (
                         <>
-                            <button className="call-btn call-btn-accept" onClick={onAnswer}>
+                            <button className="call-btn call-btn-accept" onClick={() => { onAnswer?.(); tryPlayAudio(); }}>
                                 <Phone size={24} />
                             </button>
                             <button className="call-btn call-btn-reject" onClick={onReject}>

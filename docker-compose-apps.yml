@@ -122,6 +122,7 @@ services:
       - SPRING_RABBITMQ_PORT=5672
       - SPRING_RABBITMQ_USERNAME=${RABBITMQ_USER}
       - SPRING_RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD}
+      - USER_SERVICE_URL=http://user-service:8087
       - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI=https://auth.voicemessenger.mywire.org/realms/voice-messenger
       - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI=http://keycloak:9090/realms/voice-messenger/protocol/openid-connect/certs
     networks:
